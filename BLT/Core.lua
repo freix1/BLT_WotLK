@@ -35,15 +35,16 @@ local defaults = {
         barOffsetX          = 50,
         barFont             = "Friz Quadrata TT",
         barPlayerTextSize   = 11,
-        barTargetTextSize   = 9,
+        barTargetTextSize   = 8,
         barCDTextSize       = 11,
+        displayTargets      = true,
         barTargetTextCutoff = -30,
         barTargetTextAnchor = "LEFT",
         barTargetTextColor  = {r = 1, g = 1, b = 1, a = 1},
         barPlayerTextColor  = {r = 1, g = 1, b = 1, a = 1},
         barCDTextColor      = {r = 1, g = 1, b = 1, a = 1},
         barTargetTextPosX   = 50,
-        barTargetTextPosY   = 10,
+        barTargetTextPosY   = 9,
         split    	        = 2,
         texture  	        = "Blizzard",
         cooldowns 	 	    = {
@@ -86,47 +87,31 @@ local trackCooldownAllUniqueSpellNames = {}
 local trackCooldownAllUniqueSpellEnabledStatuses = {}
 local trackCooldownAllUniqueItemNames = {}
 local trackCooldownAllUniqueItemEnabledStatuses = {}
-local mainFrame
 local cooldown_Frames = {}
 local icon_Frames = {}
 local classesInGroup = {}
 local playersInGroup = {}
 local targetTable = {}
-local scaleUI
-local iconTextSize_Scale
-local iconSize_Scale
-local offsetBetweenCooldowns_Scale
-local cooldownXOffset_Scale
-local barPlayerTextSize_Scale
-local barCDTextSize_Scale
-local barTargetTextSize_Scale
-local cooldownWidth_Scale
-local cooldownHeight_Scale
-local offsetBetweenIcons_Scale
-local edgeOffset_Scale
+local mainFrame, scaleUI
+local iconTextSize, iconTextSize_Scale
+local iconSize, iconSize_Scale
+local offsetBetweenCooldowns, offsetBetweenCooldowns_Scale
+local cooldownXOffset, cooldownXOffset_Scale
+local barPlayerTextSize, barPlayerTextSize_Scale
+local barCDTextSize, barCDTextSize_Scale
+local barTargetTextSize, barTargetTextSize_Scale
+local cooldownWidth, cooldownWidth_Scale
+local cooldownHeight, cooldownHeight_Scale
+local offsetBetweenIcons, offsetBetweenIcons_Scale
+local edgeOffset, edgeOffset_Scale
+local targetTextPosX, targetTextPosX_Scale, targetTextPosY, targetTextPosY_Scale
 local cooldownForegroundBorderOffset = 4
-local iconTextSize = 0
-local iconSize = 0
-local offsetBetweenCooldowns = 0
-local cooldownXOffset = 0
-local barPlayerTextSize = 0
-local barCDTextSize = 0
-local barTargetTextSize = 0
-local cooldownWidth = 0
-local cooldownHeight = 0
-local offsetBetweenIcons = 0
-local edgeOffset = 0
 local foundAtLeastOne = false
 local isOnRightSide = false
-local yOffsetMaximum = 0
-local currentXOffset = 0
-local currentYOffset = 0
-local cooldownBottomMostElementY = 0
-local cooldownCurrentXOffset = 0
-local cooldownCurrentYOffset = 0
-local cooldownCurrentXOffsetStart = 0
-local cooldownCurrentYOffsetStart = 0
-local cooldownCurrentCounter = 0
+local currentXOffset, currentYOffset, yOffsetMaximum
+local cooldownCurrentXOffset, cooldownCurrentYOffset
+local cooldownCurrentXOffsetStart, cooldownCurrentYOffsetStart
+local cooldownBottomMostElementY, cooldownCurrentCounter
 local frameColorLocked = { r=0.0, g=0.0, b=0.0, a=0.0 }
 local frameColor = { r=0.0, g=0.0, b=0.0, a=0.4 }
 local itemColor = { r=0.5, g=0, b=0.9, a=1.0 }
@@ -260,6 +245,8 @@ local function SetupNewScale()
     offsetBetweenIcons = 5 * resizeFromPixelPerfect * scaleUI * offsetBetweenIcons_Scale
     offsetBetweenCooldowns = 2.4 * resizeFromPixelPerfect * scaleUI * offsetBetweenCooldowns_Scale
     edgeOffset = 3 * resizeFromPixelPerfect * scaleUI * edgeOffset_Scale
+    targetTextPosX = 40 * resizeFromPixelPerfect * scaleUI * targetTextPosX_Scale
+    targetTextPosY = 40 * resizeFromPixelPerfect * scaleUI * targetTextPosY_Scale
 end
 
 local function IsOnRightSide()
@@ -360,13 +347,13 @@ local function CooldownFrame_OnEnter(self)
                                     end
                                 end
                                 if hasCD then
-                                    AddTooltip("",1, 0, 0)
+                                    AddTooltip("", 1, 0, 0)
                                 elseif UnitIsDeadOrGhost(playerName) then
                                     AddTooltip(" [Dead]", 0.4, 0.4, 0.4)
                                 elseif not UnitInRange(playerName) then
                                     AddTooltip(" [not in Range]", 0.2, 0.4, 1)
                                 else
-                                    AddTooltip("",1, 1, 1)
+                                    AddTooltip("", 1, 1, 1)
                                 end
                             end
                         end
@@ -583,6 +570,9 @@ function BLT:OnEnable()
             self:AddTrackCooldownItem(v2.nr, k2, v2.spellId, v2.spellIdHc, v2.itemId, v2.cd)
         end
     end
+    db.debugIcons = false
+    self:RegisterEvent("PLAYER_UPDATE_RESTING", "UpdateVisible")
+    self:RegisterEvent("PARTY_MEMBERS_CHANGED", "UpdateVisible")
     self:CreateMainFrame()
     self:CreateBackendFrame()
     self:SetAnchors(true)
@@ -597,14 +587,14 @@ end
 
 function BLT:OnProfileChanged(event, database, newProfileKey)
     db = database.profile
-
     self:SetAnchors(true, true)
     self:SetOptions()
 end
 
 function BLT:SetupOptions()
-    AC:RegisterOptionsTable("BLT", self.options)
-    AC:RegisterOptionsTable("BLT Commands", self.commands, "blt")
+    AC:RegisterOptionsTable(L["BLT"], self.options)
+    AC:RegisterOptionsTable(L["BLT Commands"], self.commands, "blt")
+    ACR:RegisterOptionsTable(L["Show When..."], self.options.args.show)
     ACR:RegisterOptionsTable(L["Icons"], self.options.args.icons)
     ACR:RegisterOptionsTable(L["Bars"], self.options.args.bars)
     ACR:RegisterOptionsTable(L["Cooldowns"], self.options.args.cooldowns)
@@ -612,7 +602,8 @@ function BLT:SetupOptions()
     LibDualSpec:EnhanceOptions(LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db), self.db)
 
     self.optionsFrames = {}
-    self.optionsFrames.BLT = ACD:AddToBlizOptions("BLT", self.version, nil, "general")
+    self.optionsFrames.BLT = ACD:AddToBlizOptions(L["BLT"], self.version, nil, "general")
+    self.optionsFrames.Show = ACD:AddToBlizOptions(L["Show When..."], L["Show When..."], self.version)
     self.optionsFrames.Icon = ACD:AddToBlizOptions(L["Icons"], L["Icons"], self.version)
     self.optionsFrames.Bar = ACD:AddToBlizOptions(L["Bars"], L["Bars"], self.version)
     self.optionsFrames.Spells = ACD:AddToBlizOptions(L["Cooldowns"], L["Cooldowns"], self.version)
@@ -675,10 +666,10 @@ function BLT:CreateMainFrame()
     mainFrame:SetScript("OnDragStop", function(s) s:StopMovingOrSizing(); BLT:SetAnchors() end)
     mainFrame:SetWidth(200)
     mainFrame:SetHeight(200)
-    local texture1 = mainFrame:CreateTexture("ARTWORK")
-    texture1:SetAllPoints()
-    texture1:SetTexture(frameColorLocked.r, frameColorLocked.g, frameColorLocked.b, frameColorLocked.a)
-    mainFrame.texture = texture1
+    local texture = mainFrame:CreateTexture("ARTWORK")
+    texture:SetAllPoints()
+    texture:SetTexture(frameColorLocked.r, frameColorLocked.g, frameColorLocked.b, frameColorLocked.a)
+    mainFrame.texture = texture
     mainFrame:SetFrameLevel(1)
     mainFrame.isSetToHidden = false
     mainFrame.isSetToMovable = false
@@ -733,8 +724,7 @@ function BLT:CreateIconFrame(name, id, class, isItem)
         frame.fontString = fontString
 
         -- Set the new texture of the frame
-        local icon
-        icon = isItem and GetItemIcon(id) or select(3, GetSpellInfo(self:GetSpellIDFromName(name)))
+        local icon = isItem and GetItemIcon(id) or select(3, GetSpellInfo(self:GetSpellIDFromName(name)))
         if icon then
             texture1:SetTexture(icon)
             texture1:SetTexCoord(unpack({.08, .92, .08, .92}))
@@ -817,17 +807,12 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
 
         -- Target name font string
         local fontString3 = fontFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        ModifyFontString(fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", fontFrame,"TOPLEFT", "BOTTOMRIGHT", db.barTargetTextPosX, db.barTargetTextPosY-10, db.barTargetTextCutoff, db.barTargetTextPosY+10, db.barTargetTextAnchor, "MIDDLE", true)
+        ModifyFontString(fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", fontFrame,"TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY, db.barTargetTextAnchor, "MIDDLE", true)
         frame.fontString3 = fontString3
 
         tinsert(cooldown_Frames, frame)
     end
-    local maximumCooldown
-    if db.debugBars then
-        maximumCooldown = random(5, 80)
-    else
-        maximumCooldown = self:GetMaximumCooldown(name, playerName, isItem)
-    end
+    local maximumCooldown = db.debugBars and random(5, 80) or self:GetMaximumCooldown(name, playerName, isItem)
     frame.spellTimestamp = GetTime() + maximumCooldown
     frame.maximumCooldown = maximumCooldown
     frame:Show()
@@ -1048,7 +1033,7 @@ function BLT:UpdateUISize()
         frame.frameBackground:SetHeight(cooldownHeight)
         ModifyFontString(frame.fontString, Media:Fetch("font", db.barFont), barPlayerTextSize, "OUTLINE", db.barPlayerTextColor)
         ModifyFontString(frame.fontString2, Media:Fetch("font", db.barFont), barCDTextSize, "OUTLINE", db.barCDTextColor)
-        ModifyFontString(frame.fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", frame.fontFrame, "TOPLEFT", "BOTTOMRIGHT", db.barTargetTextPosX, db.barTargetTextPosY-10, db.barTargetTextCutoff, db.barTargetTextPosY+10, db.barTargetTextAnchor)
+        ModifyFontString(frame.fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", frame.fontFrame, "TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY, db.barTargetTextAnchor)
     end
 end
 
@@ -1117,11 +1102,7 @@ function BLT:UpdateIconFrame(index)
         local cooldownFrame = cooldown_Frames[i]
         if cooldownFrame.isUsed then
             if cooldownFrame.name == name then
-                if frame:IsShown() then
-                    self:UpdateCooldownFrame(cooldownFrame, true)
-                else
-                    self:UpdateCooldownFrame(cooldownFrame, false)
-                end
+                self:UpdateCooldownFrame(cooldownFrame, frame:IsShown() and true or false)
                 count = count + 1
             end
         end
@@ -1380,7 +1361,6 @@ function BLT:GetSpellIDFromName(spellName)
             return trackCooldownSpellIDs[i]
         end
     end
-    return ""
 end
 
 function BLT:SetOptions()
@@ -1396,6 +1376,8 @@ function BLT:SetOptions()
     edgeOffset_Scale = ConvertSliderValueToPercentageValue(db.offset)
     iconTextSize_Scale = ConvertSliderValueToPercentageValue(db.iconTextSize)
     iconSize_Scale = ConvertSliderValueToPercentageValue(db.iconSize)
+    targetTextPosX_Scale = ConvertSliderValueToPercentageValue(db.barTargetTextPosX)
+    targetTextPosY_Scale = ConvertSliderValueToPercentageValue(db.barTargetTextPosY)
 
     for i=1, #cooldown_Frames do
         cooldown_Frames[i].texture:SetTexture(Media:Fetch("statusbar", db.texture))
@@ -1413,17 +1395,35 @@ function BLT:SetOptions()
         icon_Frames[i].fontString:SetPoint(db.iconTextAnchor)
     end
 
-    if db.enable then
+    SetMainFrameLockedStatus(db.locked)
+    self:UpdateVisible()
+    self:UpdateUISize()
+end
+
+function BLT:UpdateVisible()
+    local inParty = GetNumPartyMembers() > 0
+    local inRaid = GetNumRaidMembers() > 0
+    -- Check for pet|party|raid|alone
+    local show = (db.party and inParty) or
+            (db.raid and inRaid) or
+            (db.solo and not inParty and not inRaid)
+
+    -- Then hide override if necessary for resting|pvp
+    local _, instanceType = IsInInstance()
+    if (db.resting and IsResting()) or (db.pvp and (instanceType == "pvp" or instanceType == "arena")) then
+        show = false
+    end
+    if not db.useShowWith or db.debugIcons then
+        show = true
+    end
+
+    if db.enable and show then
         mainFrame:Show()
         mainFrame.isSetToHidden = false
     else
         mainFrame:Hide()
         mainFrame.isSetToHidden = true
     end
-
-    SetMainFrameLockedStatus(db.locked)
-
-    self:UpdateUISize()
 end
 
 function BLT:SetAnchors(useDB, conf)

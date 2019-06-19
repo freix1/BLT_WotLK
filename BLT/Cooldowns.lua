@@ -2,7 +2,7 @@ local BLT = LibStub("AceAddon-3.0"):GetAddon("BLT")
 
 local GetSpellInfo = GetSpellInfo
 local GetItemInfo  = GetItemInfo
-local ItemNames    = BLT_ItemNames
+local GetItemName  = BLT_ItemNames
 
 --[[
 	["Localized Spell Name"] = {
@@ -20,8 +20,7 @@ local ItemNames    = BLT_ItemNames
 	}
 
 	- We assume that every Discipline Priest has specced into 'Pain Suppression' and 'Power Infusion'.
-	- The WoW API doesn't allow us to track other players glyphs. However, there is a mechanism in place where people
-	  who also have this addon share glyph information with each other and their glyphs will be taken into consideration.
+	- The WoW API doesn't allow us to track other players glyphs. However, there is a mechanism in place where people, that also have this addon, share glyph information with each other and their glyphs will be taken into consideration.
 ]]
 local hero = (UnitFactionGroup("player") == "Alliance") and 32182 or 2825
 BLT.spells = {
@@ -574,13 +573,12 @@ BLT.spells = {
 		cd = 123           -- Item cooldown (sec)
 	}
 
-	- GetItemInfo will only return item information if it is directly available in memory!
-	  Because of this we store all localized item names in a table by ourselves to avoid empty results.
+	- GetItemInfo will only return item information if it is directly available in memory! Because of this we store all localized item names in a table by ourselves to avoid empty results.
 ]]
 BLT.items = {
     ["ITEMS"] = {
         -- Glowing Twilight Scale
-        [GetItemInfo(54589) or ItemNames[54589]]  = {
+        [GetItemInfo(54589) or GetItemName[54589]]  = {
             nr = 38,
             spellId = 75490,
             spellIdHc = 75495,
@@ -588,7 +586,7 @@ BLT.items = {
             cd = 120
         },
         -- Sindragosa's Flawless Fang
-        [GetItemInfo(50364) or ItemNames[50364]]  = {
+        [GetItemInfo(50364) or GetItemName[50364]]  = {
             nr = 39,
             spellId = 71635,
             spellIdHc = 71638,

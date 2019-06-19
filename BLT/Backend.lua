@@ -1,4 +1,4 @@
-local BLT = LibStub("AceAddon-3.0"):NewAddon("BLT", "AceConsole-3.0", "AceTimer-3.0")
+local BLT = LibStub("AceAddon-3.0"):NewAddon("BLT", "AceConsole-3.0", "AceTimer-3.0", "AceEvent-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("BLT")
 local TalentQuery = LibStub:GetLibrary("LibTalentQuery-1.0")
 
@@ -119,7 +119,7 @@ local function HandleEvent(_, event, ...)
         local arg1, arg2 = strsplit(":", msg)
         if arg1 == "Glyphs" then
             BLT.playerGlyphs[sender] = arg2
-        elseif arg1 == "Request-Version" then --and sender ~= selfPlayerName
+        elseif arg1 == "Request-Version" then
             SendAddonMessage("BLT", "Version:"..sub(BLT.version, 5), "WHISPER", sender)
         elseif arg1 == "Version" then
             addonUsers[sender] = arg2
@@ -140,7 +140,7 @@ function BLT:ReportUserTimer()
             end
             tinsert(users, format("%s (|r|cFF00FF00%s|r|cFFBEBEBE)",self:Unit(user),version))
         else
-            tinsert(users, format("%s (%s)",self:Unit(user),version))
+            tinsert(users, format("%s (%s)", self:Unit(user),version))
         end
     end
     if next(users) ~= nil then
