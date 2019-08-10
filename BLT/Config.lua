@@ -14,6 +14,15 @@ end
 local function get(t)
 	return BLT.db.profile[t[#t]]
 end
+local function tlen(t)
+	local count = 0
+	for k in pairs(t) do
+		for _ in pairs(t[k]) do
+			count = count + 1
+		end
+	end
+	return count
+end
 
 -- Option table for slash commands
 BLT.commands = {
@@ -271,8 +280,8 @@ BLT.options = {
 							desc = L["Control the size of the icons."],
 							min = 1, max = 100, step = 1, bigStep = 1,
 							get = get,
-							width = "full",
 							set = set,
+                            width = "full",
 							order = 1
 						},
 						iconOffsetY = {
@@ -390,6 +399,7 @@ BLT.options = {
 
 						BLT:DebugCooldownBars()
 					end,
+					width = "full",
 					order = 1
 				},
 				displayTargets = {
@@ -400,12 +410,20 @@ BLT.options = {
 					set = set,
 					order = 2
 				},
+				alignBarSide = {
+					type = "toggle",
+					name = L["Align Bars Left"],
+					desc = L["Align the bars to the left, instead of the default right side."],
+					get = get,
+					set = set,
+					order = 3
+				},
 				barGroup = {
 					type = "group",
 					name = L["Bar Options"],
 					cmdHidden = true,
 					guiInline = true,
-					order = 3,
+					order = 4,
 					args = {
 						barWidth = {
 							type = "range",
@@ -490,7 +508,7 @@ BLT.options = {
 					name = L["Player Text Options"],
 					guiInline = true,
 					cmdHidden = true,
-					order = 4,
+					order = 5,
 					args = {
 						barPlayerTextSize = {
 							type = "range",
@@ -527,7 +545,7 @@ BLT.options = {
 					disabled = function()
 						return not BLT.db.profile.displayTargets
 					end,
-					order = 5,
+					order = 6,
 					args = {
 						barTargetTextSize = {
 							type = "range",
@@ -615,7 +633,7 @@ BLT.options = {
 					name = L["Cooldown Text Options"],
 					cmdHidden = true,
 					guiInline = true,
-					order = 6,
+					order = 7,
 					args = {
 						barCDTextSize = {
 							type = "range",
@@ -649,18 +667,76 @@ BLT.options = {
 		cooldowns = {
 			type = "group",
 			name = L["Cooldowns"],
-			desc = L["Configure which spells are shown."],
+			desc = L["Configure which spells/items are shown."],
 			cmdHidden = true,
 			args = {}
-		}
+		},
+        sorting = {
+            type = "group",
+            name = L["Sorting"],
+            desc = L["Configure the sorting of the spells/items."],
+            cmdHidden = true,
+            args = {
+                desc = {
+                    type = "description",
+                    name = L["This section controls how spells and items are sorted."],
+                    disabled = false,
+                    order = 0,
+                },
+                useCustomSorting = {
+                    type = "toggle",
+                    name = L["Use Custom Sorting"],
+                    desc = L["Use custom sorting instead of the default sorting."],
+                    get = get,
+                    set = set,
+                    disabled = false,
+                    order = 0.1,
+                },
+				resetCustomSorting = {
+					type = "execute",
+					name = L["Reset to Default"],
+					desc = L["Reset the custom sorting to the default sorting."],
+					confirm = true,
+					func = function()
+						for k in pairs(BLT.db.profile.sorting) do
+							for k2 in pairs(BLT.spells) do
+								for _,v in pairs(BLT.spells[k2]) do
+									if v.id == k then
+										BLT.db.profile.sorting[k] = v.nr
+										break
+									end
+								end
+							end
+						end
+						for k in pairs(BLT.db.profile.sorting) do
+							for k2 in pairs(BLT.items) do
+								for _,v in pairs(BLT.items[k2]) do
+									if v.itemId == k then
+										BLT.db.profile.sorting[k] = v.nr
+										break
+									end
+								end
+							end
+						end
+					end,
+					order = 0.2,
+				},
+                defineSorting = {
+                    type = "header",
+                    name = L["Define Sorting"],
+                    order = 0.3,
+                }
+            }
+        }
 	}
 }
 
 do
 	local t = BLT.options.args.cooldowns.args
+    local s = BLT.options.args.sorting.args
 	local i = 5 -- Sorting
 
-	for k,_ in pairs(BLT.spells) do
+	for k in pairs(BLT.spells) do
 		-- Separate class spells with a header
 		t[k] = {
 			type = "header",
@@ -671,26 +747,75 @@ do
 		i = i + 1
 
 		-- Add an option entry for each spell
-		for k2, v2 in pairs(BLT.spells[k]) do
-			t[tostring(v2.id)] = {
+		for k2, v in pairs(BLT.spells[k]) do
+			t[tostring(v.id)] = {
 				type = "toggle",
 				name = k2,
 				desc = L["Display %s cooldowns."]:format(k2),
 				order = i,
 				get = function()
-					return BLT.db.profile.cooldowns[v2.id]
+					return BLT.db.profile.cooldowns[v.id]
 				end,
 				set = function(_, value)
-					BLT.db.profile.cooldowns[v2.id] = value
+					BLT.db.profile.cooldowns[v.id] = value
 					BLT:SetOptions()
 				end,
 				cmdHidden = true
 			}
-			i = i + 1
+
+            s[tostring(v.id)] = {
+                type = "group",
+                name = function() return BLT.db.profile.sorting[v.id] .. ". " .. k2 end,
+                order = function() return tonumber(BLT.db.profile.sorting[v.id]) end,
+                guiInline = true,
+                args = {
+                    up = {
+                        type = "execute",
+                        name = L["Up"],
+                        func = function()
+                            if BLT.db.profile.sorting[v.id] ~= 1 then
+								for key, value in pairs(BLT.db.profile.sorting) do
+									if value == BLT.db.profile.sorting[v.id]-1 then
+										BLT.db.profile.sorting[key] = value+1
+										break
+									end
+								end
+                                BLT.db.profile.sorting[v.id] = BLT.db.profile.sorting[v.id]-1
+                            end
+                        end,
+                        order = 1
+                    },
+                    down = {
+                        type = "execute",
+                        name = L["Down"],
+                        func = function()
+                            if BLT.db.profile.sorting[v.id] ~= (tlen(BLT.spells) + tlen(BLT.items)) then
+								for key, value in pairs(BLT.db.profile.sorting) do
+									if value == BLT.db.profile.sorting[v.id]+1 then
+										BLT.db.profile.sorting[key] = value-1
+										break
+									end
+								end
+                                BLT.db.profile.sorting[v.id] = BLT.db.profile.sorting[v.id]+1
+                            end
+                        end,
+                        order = 2
+                    },
+                    nr = {
+                        type = "input",
+                        name = L["Sort Nr"],
+                        get = function() return tostring(BLT.db.profile.sorting[v.id]) end,
+                        set = function(_, value) BLT.db.profile.sorting[v.id] = tonumber(value) end,
+                        guiHidden = true,
+                        order = 3
+                    }
+                }
+            }
+            i = i + 1
 		end
 	end
 
-	for k,_ in pairs(BLT.items) do
+	for k in pairs(BLT.items) do
 		t[k] = {
 			type = "header",
 			name = L[k],
@@ -700,20 +825,69 @@ do
 		i = i + 1
 
 		-- Add an option entry for each item
-		for k2, v2 in pairs(BLT.items[k]) do
+		for k2, v in pairs(BLT.items[k]) do
 			t[k2] = {
 				type = "toggle",
 				name = k2,
 				desc = L["Display %s cooldowns."]:format(k2),
 				order = i,
 				get = function()
-					return BLT.db.profile.cooldowns[v2.itemId]
+					return BLT.db.profile.cooldowns[v.itemId]
 				end,
 				set = function(_, value)
-					BLT.db.profile.cooldowns[v2.itemId] = value
+					BLT.db.profile.cooldowns[v.itemId] = value
 					BLT:SetOptions()
 				end,
 				cmdHidden = true
+			}
+
+			s[k2] = {
+				type = "group",
+				name = function() return BLT.db.profile.sorting[v.itemId] .. ". " ..  k2 end,
+				order = function() return tonumber(BLT.db.profile.sorting[v.itemId]) end,
+				guiInline = true,
+				args = {
+					up = {
+						type = "execute",
+						name = L["Up"],
+						func = function()
+							if BLT.db.profile.sorting[v.itemId] ~= 1 then
+								for key, value in pairs(BLT.db.profile.sorting) do
+									if value == BLT.db.profile.sorting[v.itemId]-1 then
+										BLT.db.profile.sorting[key] = value+1
+										break
+									end
+								end
+								BLT.db.profile.sorting[v.itemId] = BLT.db.profile.sorting[v.itemId]-1
+							end
+						end,
+						order = 1
+					},
+					down = {
+						type = "execute",
+						name = L["Down"],
+						func = function()
+							if BLT.db.profile.sorting[v.itemId] ~= (tlen(BLT.spells) + tlen(BLT.items)) then
+								for key, value in pairs(BLT.db.profile.sorting) do
+									if value == BLT.db.profile.sorting[v.itemId]+1 then
+										BLT.db.profile.sorting[key] = value-1
+										break
+									end
+								end
+								BLT.db.profile.sorting[v.itemId] = BLT.db.profile.sorting[v.itemId]+1
+							end
+						end,
+						order = 2
+					},
+					nr = {
+						type = "input",
+						name = L["Sort Nr"],
+						get = function() return tostring(BLT.db.profile.sorting[v.itemId]) end,
+						set = function(_, value) BLT.db.profile.sorting[v.itemId] = tonumber(value) end,
+						guiHidden = true,
+						order = 3
+					}
+				}
 			}
 			i = i + 1
 		end

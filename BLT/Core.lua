@@ -8,9 +8,15 @@ local LibDualSpec = LibStub("LibDualSpec-1.0")
 BLT.version = "BLT v"..GetAddOnMetadata("BLT", "Version")
 
 local math, max, random, floor = _G.math, _G.max, _G.random, _G.floor
-local select, pairs, strupper = _G.select, _G.pairs, _G.strupper
+local select, pairs, unpack, strupper = _G.select, _G.pairs, _G.unpack, _G.strupper
 local tinsert, tremove, tsort, tconcat = table.insert, table.remove, table.sort, table.concat
 local format, upper, find = string.format, string.upper, string.find
+local CreateFrame, GameTooltip = CreateFrame, GameTooltip
+local UnitName, UnitClass, UnitExists = UnitName, UnitClass, UnitExists
+local UnitInRaid, UnitInParty = UnitInRaid, UnitInParty
+local UnitIsDeadOrGhost, UnitInRange, UnitIsConnected = UnitIsDeadOrGhost, UnitInRange, UnitIsConnected
+local GetSpellInfo, GetSpellLink, GetItemInfo = GetSpellInfo, GetSpellLink, GetItemInfo
+local GetNumPartyMembers, GetNumRaidMembers = GetNumPartyMembers, GetNumRaidMembers
 local contains, clearList = BLT.contains, BLT.clearList
 
 -- Local variables --
@@ -44,9 +50,10 @@ local defaults = {
         barPlayerTextColor  = {r = 1, g = 1, b = 1, a = 1},
         barCDTextColor      = {r = 1, g = 1, b = 1, a = 1},
         barTargetTextPosX   = 50,
-        barTargetTextPosY   = 9,
+        barTargetTextPosY   = 5,
         split    	        = 2,
         texture  	        = "Blizzard",
+        sorting             = {},
         cooldowns 	 	    = {
             [29166] = true, -- Innervate
             [48477] = true, -- Rebirth
@@ -64,6 +71,18 @@ local defaults = {
         }
     }
 }
+do
+    for k in pairs(BLT.spells) do
+        for _,v in pairs(BLT.spells[k]) do
+            defaults.profile.sorting[v.id] = v.nr
+        end
+    end
+    for k in pairs(BLT.items) do
+        for _,v in pairs(BLT.items[k]) do
+            defaults.profile.sorting[v.itemId] = v.nr
+        end
+    end
+end
 
 local sortNr = {}
 local trackCooldownClasses = {}
@@ -77,8 +96,8 @@ local trackCooldownAlternativeSpellCooldown = {}
 local trackItems = {}
 local trackItemSpellIDs = {}
 local trackItemSpellIDsHC = {}
-local trackItemID = {}
-local trackItemCooldown = {}
+local trackItemIDs = {}
+local trackItemCooldowns = {}
 local trackLvlRequirement = {}
 local trackGlyphs = {}
 local trackGlyphCooldown = {}
@@ -107,13 +126,12 @@ local edgeOffset, edgeOffset_Scale
 local targetTextPosX, targetTextPosX_Scale, targetTextPosY, targetTextPosY_Scale
 local cooldownForegroundBorderOffset = 4
 local foundAtLeastOne = false
-local isOnRightSide = false
 local currentXOffset, currentYOffset, yOffsetMaximum
 local cooldownCurrentXOffset, cooldownCurrentYOffset
 local cooldownCurrentXOffsetStart, cooldownCurrentYOffsetStart
 local cooldownBottomMostElementY, cooldownCurrentCounter
-local frameColorLocked = { r=0.0, g=0.0, b=0.0, a=0.0 }
-local frameColor = { r=0.0, g=0.0, b=0.0, a=0.4 }
+local frameColorLocked = { r=0, g=0, b=0, a=0 }
+local frameColor = { r=0, g=0, b=0, a=0.4 }
 local itemColor = { r=0.5, g=0, b=0.9, a=1.0 }
 local classColors = {
     ["DEATHKNIGHT"] = "C41F3B",
@@ -249,30 +267,6 @@ local function SetupNewScale()
     targetTextPosY = 40 * resizeFromPixelPerfect * scaleUI * targetTextPosY_Scale
 end
 
-local function IsOnRightSide()
-    if not mainFrame then return end
-
-    local point, _, _, xOfs = mainFrame:GetPoint()
-
-    if point == "TOPRIGHT" or point == "RIGHT" or point == "BOTTOMRIGHT" then
-        return true
-    end
-
-    if point == "TOPLEFT" then  -- We might be dragging the frame
-        if xOfs * mainFrame:GetScale() > UIParent:GetWidth() * 0.5 then
-            return true
-        end
-    end
-
-    if point == "TOP" or point == "CENTER" or point == "BOTTOM" then
-        if xOfs > 0 then
-            return true
-        end
-    end
-
-    return false
-end
-
 local function CreateBorder(parentFrame, offset, pixels, r, g, b, a, frameLevel, frameReuse)
     local frame = frameReuse or CreateFrame("Frame", nil, parentFrame)
     local texture1 = frame:CreateTexture(nil, "BACKGROUND")
@@ -286,7 +280,7 @@ local function CreateBorder(parentFrame, offset, pixels, r, g, b, a, frameLevel,
     frame:SetPoint("TOPLEFT", -offset, offset)
     frame:SetPoint("BOTTOMRIGHT", offset, -offset)
 
-    if parentFrame.borders == nil then
+    if not parentFrame.borders then
         parentFrame.borders = {}
     end
     tinsert(parentFrame.borders, frame)
@@ -349,9 +343,9 @@ local function CooldownFrame_OnEnter(self)
                                 if hasCD then
                                     AddTooltip("", 1, 0, 0)
                                 elseif UnitIsDeadOrGhost(playerName) then
-                                    AddTooltip(" [Dead]", 0.4, 0.4, 0.4)
+                                    AddTooltip(" ["..L["Dead"].."]", 0.4, 0.4, 0.4)
                                 elseif not UnitInRange(playerName) then
-                                    AddTooltip(" [not in Range]", 0.2, 0.4, 1)
+                                    AddTooltip(" ["..L["Out of Range"].."]", 0.2, 0.4, 1)
                                 else
                                     AddTooltip("", 1, 1, 1)
                                 end
@@ -372,9 +366,9 @@ local function CooldownFrame_OnEnter(self)
                             if hasCD then
                                 AddTooltip("",1, 0, 0)
                             elseif UnitIsDeadOrGhost(playerName) then
-                                AddTooltip(" [Dead]", 0.4, 0.4, 0.4)
+                                AddTooltip(" ["..L["Dead"].."]", 0.4, 0.4, 0.4)
                             elseif not UnitInRange(playerName) then
-                                AddTooltip(" [not in Range]", 0.2, 0.4, 1)
+                                AddTooltip(" ["..L["Out of Range"].."]", 0.2, 0.4, 1)
                             else
                                 AddTooltip("",1, 1, 1)
                             end
@@ -428,21 +422,21 @@ local function HandleEvent(_, event, ...)
                 -- Check if we cast a spell
             elseif combatEvent == "SPELL_CAST_SUCCESS" then
                 local spellId, spellName = select(9,...)
-                if spellName == "Tricks of the Trade" or spellName == "Misdirection" then
+                if spellName == GetSpellInfo(57934) or spellName == GetSpellInfo(34477) then -- 'Tricks of the Trade' or 'Misdirection'
                     targetTable[sourceName] = destName
                 else
                     targetSpellId, targetSpellName = spellId, spellName
                 end
-                if spellName == "Readiness" then
+                if spellName == GetSpellInfo(23989) then -- Readiness
                     for i=1, #cooldown_Frames do
-                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == "Misdirection" then
+                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == GetSpellInfo(34477) then -- 'Misdirection'
                             BLT:UpdateCooldownFrame(cooldown_Frames[i], false)
                             break
                         end
                     end
-                elseif spellName == "Cold Snap" then
+                elseif spellName == GetSpellInfo(11958) then -- Cold Snap
                     for i=1, #cooldown_Frames do
-                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == "Ice Block" then
+                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == GetSpellInfo(45438) then -- 'Ice Block'
                             BLT:UpdateCooldownFrame(cooldown_Frames[i], false)
                             break
                         end
@@ -452,26 +446,26 @@ local function HandleEvent(_, event, ...)
                 -- Check if we got a spell aura applied
             elseif combatEvent == "SPELL_AURA_APPLIED" then
                 local spellId, spellName = select(9,...)
-                if spellName == "Guardian Spirit" then
+                if spellName == GetSpellInfo(47788) then -- 'Guardian Spirit'
                     if BLT:TimeLeft(BLT.gsTimer) ~= 0 then
                         BLT:CancelTimer(BLT.gsTimer)
                     end
                     BLT.gsTimer = BLT:ScheduleTimer("GuardianSpiritTimer", 9.5)
-                elseif not (spellName == "Hymn of Hope" or spellName == "Divine Hymn" or spellName == "Anti-Magic Zone" or spellName == "Misdirection" or spellName == "Tricks of the Trade") then
+                elseif not (spellName == GetSpellInfo(64901) or spellName == GetSpellInfo(64843) or spellName == GetSpellInfo(51052) or spellName == GetSpellInfo(34477) or spellName == GetSpellInfo(57934)) then -- 'Hymn of Hope' or 'Divine Hymn' or 'Anti-Magic Zone' or 'Misdirection' or 'Tricks of the Trade'
                     targetSpellId, targetSpellName = spellId, spellName
                 end
 
             elseif combatEvent == "SPELL_AURA_REMOVED" then
                 local spellId, spellName = select(9,...)
                 -- 'Misdirection' and 'Tricks of the Trade' CDs should only be triggered when successfully procced or cancelled
-                if (spellName == "Misdirection" and spellId == 34477) or
-                        (spellName == "Tricks of the Trade" and spellId == 57934) then
+                if (spellName == GetSpellInfo(34477) and spellId == 34477) or
+                        (spellName == GetSpellInfo(57934) and spellId == 57934) then
                     targetSpellId, targetSpellName = spellId, spellName
                     if contains(targetTable, sourceName, true) then
                         destName = targetTable[sourceName]
                         targetTable[sourceName] = nil
                     end
-                elseif spellName == "Guardian Spirit" then
+                elseif spellName == GetSpellInfo(47788) then -- 'Guardian Spirit'
                     for i=1, #cooldown_Frames do
                         local frame = cooldown_Frames[i]
                         if frame.name == spellName and frame.playerName == sourceName and BLT:TimeLeft(BLT.gsTimer) == 0 then
@@ -484,13 +478,13 @@ local function HandleEvent(_, event, ...)
 
             elseif combatEvent == "SPELL_HEAL" then
                 local spellName = select(10,...)
-                if spellName == "Guardian Spirit" then
+                if spellName == GetSpellInfo(47788) then -- 'Guardian Spirit'
                     BLT:CancelTimer(BLT.gsTimer)
                 end
 
             elseif combatEvent == "SPELL_RESURRECT" then
                 local spellId, spellName = select(9,...)
-                if spellName == "Rebirth" then
+                if spellName == GetSpellInfo(48477) then -- 'Rebirth'
                     targetSpellId, targetSpellName = spellId, spellName
                 end
             end
@@ -514,7 +508,7 @@ local function HandleEvent(_, event, ...)
                     for i=1, #trackItems do
                         if trackItemSpellIDs[i] == targetSpellId or trackItemSpellIDsHC[i] == targetSpellId then
                             if BLT:IsPlayerValidForItemCooldown(sourceName, i) and BLT:IsCooldownItemEnabled(trackItems[i]) then
-                                BLT:CreateCooldownFrame(sourceName, trackItems[i], trackItemID[i], nil, true)
+                                BLT:CreateCooldownFrame(sourceName, trackItems[i], trackItemIDs[i], nil, true)
                                 break
                             end
                         end
@@ -524,6 +518,7 @@ local function HandleEvent(_, event, ...)
         end
     elseif event == "PLAYER_ENTERING_WORLD" then
         local inInstance, instanceType = IsInInstance()
+        -- Reset cooldowns upon entering an arena match
         if inInstance and instanceType == "arena" then
             local hasAtLeastOneCooldownFrameUp = false
             for i=1, #cooldown_Frames do
@@ -560,14 +555,14 @@ function BLT:OnInitialize()
 end
 
 function BLT:OnEnable()
-    for k,_ in pairs(self.spells) do
-        for k2, v2 in pairs(self.spells[k]) do
-            self:AddTrackCooldownSpell(v2.nr, k, v2.spec, k2, v2.id, v2.cd, v2.talent, v2.talReq, v2.altCd, v2.lvlReq, v2.tar, v2.glyph, v2.glyphCd)
+    for k in pairs(self.spells) do
+        for k2,v in pairs(self.spells[k]) do
+            self:AddTrackCooldownSpell(v.nr, k, v.spec, k2, v.id, v.cd, v.talent, v.talReq, v.altCd, v.lvlReq, v.tar, v.glyph, v.glyphCd)
         end
     end
-    for k,_ in pairs(self.items) do
-        for k2, v2 in pairs(self.items[k]) do
-            self:AddTrackCooldownItem(v2.nr, k2, v2.spellId, v2.spellIdHc, v2.itemId, v2.cd)
+    for k in pairs(self.items) do
+        for k2,v in pairs(self.items[k]) do
+            self:AddTrackCooldownItem(v.nr, k2, v.spellId, v.spellIdHc, v.itemId, v.cd)
         end
     end
     db.debugIcons = false
@@ -594,20 +589,22 @@ end
 function BLT:SetupOptions()
     AC:RegisterOptionsTable(L["BLT"], self.options)
     AC:RegisterOptionsTable(L["BLT Commands"], self.commands, "blt")
-    ACR:RegisterOptionsTable(L["Show When..."], self.options.args.show)
-    ACR:RegisterOptionsTable(L["Icons"], self.options.args.icons)
-    ACR:RegisterOptionsTable(L["Bars"], self.options.args.bars)
-    ACR:RegisterOptionsTable(L["Cooldowns"], self.options.args.cooldowns)
-    ACR:RegisterOptionsTable(L["Profiles"], LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db))
+    ACR:RegisterOptionsTable("BLT_Show When...", self.options.args.show)
+    ACR:RegisterOptionsTable("BLT_Icons", self.options.args.icons)
+    ACR:RegisterOptionsTable("BLT_Bars", self.options.args.bars)
+    ACR:RegisterOptionsTable("BLT_Cooldowns", self.options.args.cooldowns)
+    ACR:RegisterOptionsTable("BLT_Sorting", self.options.args.sorting)
+    ACR:RegisterOptionsTable("BLT_Profiles", LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db))
     LibDualSpec:EnhanceOptions(LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db), self.db)
 
     self.optionsFrames = {}
     self.optionsFrames.BLT = ACD:AddToBlizOptions(L["BLT"], self.version, nil, "general")
-    self.optionsFrames.Show = ACD:AddToBlizOptions(L["Show When..."], L["Show When..."], self.version)
-    self.optionsFrames.Icon = ACD:AddToBlizOptions(L["Icons"], L["Icons"], self.version)
-    self.optionsFrames.Bar = ACD:AddToBlizOptions(L["Bars"], L["Bars"], self.version)
-    self.optionsFrames.Spells = ACD:AddToBlizOptions(L["Cooldowns"], L["Cooldowns"], self.version)
-    self.optionsFrames.Profiles = ACD:AddToBlizOptions(L["Profiles"], L["Profiles"], self.version)
+    self.optionsFrames.Show = ACD:AddToBlizOptions("BLT_Show When...", L["Show When..."], self.version)
+    self.optionsFrames.Icon = ACD:AddToBlizOptions("BLT_Icons", L["Icons"], self.version)
+    self.optionsFrames.Bar = ACD:AddToBlizOptions("BLT_Bars", L["Bars"], self.version)
+    self.optionsFrames.Spells = ACD:AddToBlizOptions("BLT_Cooldowns", L["Cooldowns"], self.version)
+    self.optionsFrames.Sorting = ACD:AddToBlizOptions("BLT_Sorting", L["Sorting"], self.version)
+    self.optionsFrames.Profiles = ACD:AddToBlizOptions("BLT_Profiles", L["Profiles"], self.version)
 
     self.SetupOptions = nil
 end
@@ -640,12 +637,12 @@ function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, t
 end
 
 function BLT:AddTrackCooldownItem(nr, itemName, spellId, spellIdHc, itemId, cd)
-    tinsert(sortNr, nr)
+    tinsert(sortNr, db.useCustomSorting and db.sorting[itemId] or nr)
     tinsert(trackItems, itemName)
     tinsert(trackItemSpellIDs, spellId)
     tinsert(trackItemSpellIDsHC, spellIdHc)
-    tinsert(trackItemID, itemId)
-    tinsert(trackItemCooldown, cd)
+    tinsert(trackItemIDs, itemId)
+    tinsert(trackItemCooldowns, cd)
 
     if not contains(trackCooldownAllUniqueItemNames, itemName) then
         tinsert(trackCooldownAllUniqueItemNames, itemName)
@@ -689,7 +686,7 @@ function BLT:CreateIconFrame(name, id, class, isItem)
             return i
         end
     end
-    if frame == nil then
+    if not frame then
         -- Create a new frame
         frame = CreateFrame("Frame", "TrackCooldownIconFrame_" .. #icon_Frames, mainFrame)
         frame:SetWidth(iconSize)
@@ -751,7 +748,7 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
     end
     local cooldownColor = { r=0.8, g=0.8, b=0.8, a=1.0 }
     local cooldownBackgroundColor = { r=0.2, g=0.2, b=0.2, a=1.0 }
-    if frame == nil then
+    if not frame then
         -- Create a new frame
         frame = CreateFrame("Frame", "TrackCooldownFrame_" .. #cooldown_Frames, mainFrame)
         frame:SetWidth(cooldownWidth - cooldownForegroundBorderOffset)
@@ -761,7 +758,7 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
         texture1:SetAllPoints()
         texture1:SetVertexColor(cooldownColor.r, cooldownColor.g, cooldownColor.b, cooldownColor.a)
         frame.texture = texture1
-        frame.playerName = playerName
+        frame.playerName = playerName:match("[^-]+")
         frame.name = name
         frame.id = id
         frame:SetPoint("TOPLEFT", 0, 0)
@@ -807,7 +804,7 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
 
         -- Target name font string
         local fontString3 = fontFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        ModifyFontString(fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", fontFrame,"TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY, db.barTargetTextAnchor, "MIDDLE", true)
+        ModifyFontString(fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", fontFrame,"TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY*1.5, db.barTargetTextAnchor, "MIDDLE", true)
         frame.fontString3 = fontString3
 
         tinsert(cooldown_Frames, frame)
@@ -819,7 +816,7 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
     frame.frameBackground:Show()
     frame.fontFrame:Show()
     frame.isUsed = true
-    frame.target = target
+    frame.target = target and target:match("[^-]+")
 
     local class
     for i=1, #trackCooldownSpells do
@@ -910,7 +907,7 @@ function BLT:UpdateUI()
                             -- Create or get an icon index for it
                             local index = self:CreateIconFrame(trackCooldownSpells[n], trackCooldownSpellIDs[n], trackCooldownClasses[n])
                             local frame = icon_Frames[index]
-                            frame.num = sortNr[n]
+                            frame.num = db.useCustomSorting and db.sorting[trackCooldownSpellIDs[n]] or sortNr[n]
                             frame:Show()
                             if not UnitIsDeadOrGhost(playerName) then
                                 frame.count = frame.count + 1
@@ -922,9 +919,9 @@ function BLT:UpdateUI()
             for n=1, #trackItems do
                 if self:IsCooldownItemEnabled(trackItems[n]) and self:IsPlayerValidForItemCooldown(playerName, n) then
                     -- Create or get an icon index for it
-                    local index = self:CreateIconFrame(trackItems[n], trackItemID[n], nil, true)
+                    local index = self:CreateIconFrame(trackItems[n], trackItemIDs[n], nil, true)
                     local frame = icon_Frames[index]
-                    frame.num = sortNr[#sortNr-#trackItems + n]
+                    frame.num = db.useCustomSorting and db.sorting[trackItemIDs[n]] or sortNr[#sortNr-#trackItems + n]
                     frame:Show()
                     if not UnitIsDeadOrGhost(playerName) then
                         frame.count = frame.count + 1
@@ -940,15 +937,15 @@ function BLT:UpdateUI()
             if self:IsCooldownSpellEnabled(trackCooldownSpells[n]) then
                 local index = self:CreateIconFrame(trackCooldownSpells[n], trackCooldownSpellIDs[n], trackCooldownClasses[n])
                 local frame = icon_Frames[index]
-                frame.num = sortNr[n]
+                frame.num = db.useCustomSorting and db.sorting[trackCooldownSpellIDs[n]] or sortNr[n]
                 frame:Show()
             end
         end
         for n=1, #trackItems do
             if self:IsCooldownItemEnabled(trackItems[n]) then
-                local index = self:CreateIconFrame(trackItems[n], trackItemID[n], nil, true)
+                local index = self:CreateIconFrame(trackItems[n], trackItemIDs[n], nil, true)
                 local frame = icon_Frames[index]
-                frame.num = sortNr[#sortNr-#trackItems + n]
+                frame.num = db.useCustomSorting and db.sorting[trackItemIDs[n]] or sortNr[#sortNr-#trackItems + n]
                 frame:Show()
             end
         end
@@ -969,7 +966,6 @@ function BLT:UpdateUI()
     end
 
     -- Loop through all spell icon frames
-    isOnRightSide = IsOnRightSide()
     yOffsetMaximum = edgeOffset * 2.0
     currentXOffset = edgeOffset
     currentYOffset = edgeOffset
@@ -1033,7 +1029,7 @@ function BLT:UpdateUISize()
         frame.frameBackground:SetHeight(cooldownHeight)
         ModifyFontString(frame.fontString, Media:Fetch("font", db.barFont), barPlayerTextSize, "OUTLINE", db.barPlayerTextColor)
         ModifyFontString(frame.fontString2, Media:Fetch("font", db.barFont), barCDTextSize, "OUTLINE", db.barCDTextColor)
-        ModifyFontString(frame.fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", frame.fontFrame, "TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY, db.barTargetTextAnchor)
+        ModifyFontString(frame.fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", frame.fontFrame, "TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY*1.5, db.barTargetTextAnchor)
     end
 end
 
@@ -1054,7 +1050,7 @@ function BLT:GetPlayerCooldowns(frame)
                                 end
                             end
                             if not hasCD then
-                                tinsert(players, UnitIsDeadOrGhost(playerName) and playerName .. " [Dead!]" or playerName)
+                                tinsert(players, UnitIsDeadOrGhost(playerName) and playerName .. " ["..L["Dead"].."]" or playerName)
                             end
                         end
                     end
@@ -1071,7 +1067,7 @@ function BLT:GetPlayerCooldowns(frame)
                             end
                         end
                         if not hasCD then
-                            tinsert(players, UnitIsDeadOrGhost(playerName) and playerName .. " [Dead!]" or playerName)
+                            tinsert(players, UnitIsDeadOrGhost(playerName) and playerName .. " ["..L["Dead"].."]" or playerName)
                         end
                     end
                 end
@@ -1090,7 +1086,7 @@ function BLT:UpdateIconFrame(index)
     cooldownBottomMostElementY = 0
     cooldownCurrentCounter = 0
     cooldownCurrentXOffset = currentXOffset + iconSize + cooldownXOffset
-    if isOnRightSide then
+    if db.alignBarSide then
         cooldownCurrentXOffset = currentXOffset - cooldownXOffset - cooldownWidth
     end
     cooldownCurrentYOffset = currentYOffset
@@ -1128,7 +1124,7 @@ function BLT:UpdateIconFrame(index)
             if IsShiftKeyDown() then
                 local players = self:GetPlayerCooldowns(frame)
                 if GetNumPartyMembers() ~= 0 then
-                    SendChatMessage("BLT: " .. L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), next(players) and tconcat(players, ", ") or "—"), BLT:GetGroupState())
+                    SendChatMessage(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), next(players) and tconcat(players, ", ") or "—"), BLT:GetGroupState())
                 else
                     self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id)), next(players) and tconcat(players, ", ") or "—"))
                 end
@@ -1183,7 +1179,7 @@ function BLT:UpdateCooldownFrame(frame, show)
             frameBackground:SetScript("OnMouseDown", function()
                 if IsShiftKeyDown() then
                     if GetNumPartyMembers() ~= 0 then
-                        SendChatMessage("BLT: " .. L["%s's %s will be ready in %s"]:format(frame.playerName, contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), FormatCooldownText(cooldownLeft,true)), BLT:GetGroupState())
+                        SendChatMessage(L["%s's %s will be ready in %s"]:format(frame.playerName, contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), FormatCooldownText(cooldownLeft,true)), BLT:GetGroupState())
                     else
                         self:Print(L["%s's %s will be ready in %s"]:format(self:Unit(frame.playerName), contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id), FormatCooldownText(cooldownLeft,true)))
                     end
@@ -1206,7 +1202,7 @@ function BLT:UpdateCooldownFrame(frame, show)
                 cooldownCurrentCounter = cooldownCurrentCounter + 1
                 if cooldownCurrentCounter == db.split then
                     cooldownCurrentYOffset = cooldownCurrentYOffsetStart
-                    if isOnRightSide then
+                    if db.alignBarSide then
                         cooldownCurrentXOffset = cooldownCurrentXOffset - cooldownWidth - offsetBetweenCooldowns
                     else
                         cooldownCurrentXOffset = cooldownCurrentXOffset + cooldownWidth + offsetBetweenCooldowns
@@ -1273,7 +1269,7 @@ function BLT:DebugCooldownBars()
             local isItem = frame.isItem
 
             for i=1, 7 do
-                local testFrame = self:CreateCooldownFrame("Test" .. i, name, id, db.displayTargets and "Target" .. i+1 or nil, isItem)
+                local testFrame = self:CreateCooldownFrame("Test" .. i, name, id, db.displayTargets and L["Target"] .. i+1 or nil, isItem)
                 testFrame.isTest = true
             end
         end
@@ -1322,7 +1318,7 @@ function BLT:GetMaximumCooldown(name, playerName, isItem)
     if isItem then
         for i=1, #trackItems do
             if trackItems[i] == name then
-                return trackItemCooldown[i]
+                return trackItemCooldowns[i]
             end
         end
     else
@@ -1387,7 +1383,7 @@ function BLT:SetOptions()
         trackCooldownAllUniqueSpellEnabledStatuses[i] = db.cooldowns[trackCooldownSpellIDs[i]]
     end
     for i=1, #trackCooldownAllUniqueItemNames do
-        trackCooldownAllUniqueItemEnabledStatuses[i] = db.cooldowns[trackItemID[i]]
+        trackCooldownAllUniqueItemEnabledStatuses[i] = db.cooldowns[trackItemIDs[i]]
     end
 
     for i=1, #icon_Frames do

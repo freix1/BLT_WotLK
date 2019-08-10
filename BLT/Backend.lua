@@ -119,7 +119,7 @@ local function HandleEvent(_, event, ...)
         local arg1, arg2 = strsplit(":", msg)
         if arg1 == "Glyphs" then
             BLT.playerGlyphs[sender] = arg2
-        elseif arg1 == "Request-Version" then
+        elseif arg1 == "Request-Version" and UnitLevel("player") > 9 then
             SendAddonMessage("BLT", "Version:"..sub(BLT.version, 5), "WHISPER", sender)
         elseif arg1 == "Version" then
             addonUsers[sender] = arg2
@@ -192,7 +192,7 @@ function BLT:TalentQuery_Ready(e, name, r, unitId)
     if name then
         -- Calculate the spec of the player
         local unitTargetLevel = UnitLevel(unitId)
-        if unitTargetLevel >= 10 then
+        if unitTargetLevel > 9 then
             -- Check if the target seems to have a valid class
             local className, unitTargetClass = UnitClass(unitId)
             local getForInspectedPlayer -- This gets the talents from the last character NotifyInspect was called for
@@ -212,17 +212,8 @@ function BLT:TalentQuery_Ready(e, name, r, unitId)
 
                 local playerTalents = {}
                 if contains(self.specificTalents, unitTargetClass, true) then
-                    for talent in pairs(self.specificTalents[unitTargetClass]) do
-                        local tab = 0
-                        local index = 0
-                        for k,entry in pairs(self.specificTalents[unitTargetClass][talent]) do
-                            if k == 1 then
-                                tab = entry
-                            elseif k == 2 then
-                                index = entry
-                            end
-                        end
-                        local talentFound, currentRank = self:CheckSpecificTalent(getForInspectedPlayer, tab, index, talentGroup)
+                    for _, value in pairs(self.specificTalents[unitTargetClass]) do
+                        local talentFound, currentRank = self:CheckSpecificTalent(getForInspectedPlayer, value[1], value[2], talentGroup)
                         if talentFound and currentRank then
                             playerTalents[talentFound] = currentRank
                         end
