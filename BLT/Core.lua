@@ -252,7 +252,7 @@ end
 
 local function SetupNewScale()
     local resizeFromPixelPerfect = 1.25
-    iconSize = 40 * resizeFromPixelPerfect * scaleUI * iconSize_Scale    
+    iconSize = 40 * resizeFromPixelPerfect * scaleUI * iconSize_Scale
     iconTextSize = math.ceil(40 * resizeFromPixelPerfect * scaleUI * iconTextSize_Scale)
     barPlayerTextSize = math.ceil(40 * resizeFromPixelPerfect * scaleUI * barPlayerTextSize_Scale)
     barCDTextSize = math.ceil(40 * resizeFromPixelPerfect * scaleUI * barCDTextSize_Scale)
@@ -489,7 +489,7 @@ local function HandleEvent(_, event, ...)
                 end
             end
 
-            -- Check if the spell cast is in the list of track cooldowns
+            -- Check if the spell cast is in the list of tracked cooldowns
             if targetSpellName ~= "" and (contains(trackCooldownSpells, targetSpellName) or (contains(trackItemSpellIDs, targetSpellId) or contains(trackItemSpellIDsHC, targetSpellId))) then
                 -- Check if the caster is in our party/raid
                 if contains(playersInGroup, sourceName) then
@@ -501,6 +501,7 @@ local function HandleEvent(_, event, ...)
                                     destName = nil
                                 end
                                 BLT:CreateCooldownFrame(sourceName, targetSpellName, targetSpellId, destName)
+                                SendAddonMessage("BLT", "CD:"..sourceName..";"..targetSpellName..";"..targetSpellId..";"..(destName or ""), BLT:GetGroupState(), UnitName("player"))
                                 break
                             end
                         end
@@ -509,10 +510,36 @@ local function HandleEvent(_, event, ...)
                         if trackItemSpellIDs[i] == targetSpellId or trackItemSpellIDsHC[i] == targetSpellId then
                             if BLT:IsPlayerValidForItemCooldown(sourceName, i) and BLT:IsCooldownItemEnabled(trackItems[i]) then
                                 BLT:CreateCooldownFrame(sourceName, trackItems[i], trackItemIDs[i], nil, true)
+                                SendAddonMessage("BLT", "CD:"..sourceName..";"..trackItems[i]..";"..trackItemIDs[i]..";;"..tostring(true), BLT:GetGroupState(), UnitName("player"))
                                 break
                             end
                         end
                     end
+                end
+            end
+        end
+    elseif event == "CHAT_MSG_ADDON" then
+        local prefix, msg = ...
+        if prefix ~= "BLT" then return end
+        local arg1, arg2 = strsplit(":", msg)
+        if arg1 == "CD" then
+            local source, name, id, destination, isItem = strsplit(";", arg2)
+            local frameFound, cooldownFound = false, false
+            for i=1, #cooldown_Frames do
+                local frame = cooldown_Frames[i]
+                if frame.name == name then
+                    frameFound = true
+                    if frame.playerName == source then
+                        cooldownFound = true
+                        break
+                    end
+                end
+            end
+            if frameFound and not cooldownFound then
+                if isItem == "true" and BLT:IsCooldownItemEnabled(name) then
+                    BLT:CreateCooldownFrame(source, name, id, destination, true)
+                elseif BLT:IsCooldownSpellEnabled(name) then
+                    BLT:CreateCooldownFrame(source, name, id, destination)
                 end
             end
         end
@@ -674,6 +701,7 @@ function BLT:CreateMainFrame()
     -- Register all events we need
     mainFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
     mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    mainFrame:RegisterEvent("CHAT_MSG_ADDON")
     mainFrame:SetScript("OnEvent", HandleEvent)
 end
 

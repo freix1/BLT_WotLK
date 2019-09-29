@@ -119,7 +119,7 @@ local function HandleEvent(_, event, ...)
         local arg1, arg2 = strsplit(":", msg)
         if arg1 == "Glyphs" then
             BLT.playerGlyphs[sender] = arg2
-        elseif arg1 == "Request-Version" and UnitLevel("player") > 9 then
+        elseif arg1 == "Request-Version" then
             SendAddonMessage("BLT", "Version:"..sub(BLT.version, 5), "WHISPER", sender)
         elseif arg1 == "Version" then
             addonUsers[sender] = arg2
@@ -138,7 +138,7 @@ function BLT:ReportUserTimer()
             if version > newVersion then
                 newUser, newVersion = user, version
             end
-            tinsert(users, format("%s (|r|cFF00FF00%s|r|cFFBEBEBE)",self:Unit(user),version))
+            tinsert(users, format("%s (|r|cFF00FF00%s|r|cFFBEBEBE)", self:Unit(user),version))
         else
             tinsert(users, format("%s (%s)", self:Unit(user),version))
         end
