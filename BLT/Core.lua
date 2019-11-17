@@ -937,7 +937,7 @@ function BLT:UpdateUI()
                             local frame = icon_Frames[index]
                             frame.num = db.useCustomSorting and db.sorting[trackCooldownSpellIDs[n]] or sortNr[n]
                             frame:Show()
-                            if not UnitIsDeadOrGhost(playerName) then
+                            if not UnitIsDeadOrGhost(playerName) or trackCooldownSpellIDs[n] == 20608 then -- Reincarnation is usable while dead
                                 frame.count = frame.count + 1
                             end
                         end

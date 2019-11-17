@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Title: BLT
 ## Notes: Tracks specific cooldowns of players in a raid/party
-## Version: 1.3
+## Version: 1.3.1
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, AceGUI-3.0-SharedMediaWidgets, LibDualSpec-1.0
 ## SavedVariables: BLT_DB
 
@@ -11,7 +11,7 @@ embeds.xml
 
 locale\enUS.lua
 locale\deDE.lua
-locale\itemNames.lua
+locale\Names.lua
 
 Backend.lua
 Cooldowns.lua

@@ -1,8 +1,10 @@
 local BLT = LibStub("AceAddon-3.0"):GetAddon("BLT")
 
-local GetSpellInfo = GetSpellInfo
-local GetItemInfo  = GetItemInfo
-local GetItemName  = BLT_ItemNames
+local GetSpellInfo  = GetSpellInfo
+local GetItemInfo   = GetItemInfo
+local GetItemName   = BLT_ItemNames
+local GetTalentName = BLT_TalentNames
+local GetGlyphName  = BLT_GlyphNames
 
 --[[
 	["Localized Spell Name"] = {
@@ -31,7 +33,7 @@ BLT.spells = {
             id = 51052,
             cd = 120,
             spec = "Unholy",
-            talent = "Anti-Magic Zone",
+            talent = GetTalentName[51052],
             talReq = true,
             altCd = "nil",
             lvlReq = 55,
@@ -73,7 +75,7 @@ BLT.spells = {
             id = 55233,
             cd = 60,
             spec = "Blood",
-            talent = "Vampiric Blood",
+            talent = GetTalentName[55233],
             talReq = true,
             altCd = "nil",
             lvlReq = 55,
@@ -87,7 +89,7 @@ BLT.spells = {
             id = 49016,
             cd = 180,
             spec = "Blood",
-            talent = "Hysteria",
+            talent = GetTalentName[49016],
             talReq = true,
             altCd = "nil",
             lvlReq = 55,
@@ -145,7 +147,7 @@ BLT.spells = {
             id = 61336,
             cd = 180,
             spec = "Feral",
-            talent = "Survival Instincts",
+            talent = GetTalentName[61336],
             talReq = true,
             altCd = "nil",
             lvlReq = 20,
@@ -159,7 +161,7 @@ BLT.spells = {
             id = 26983,
             cd = 480,
             spec = "Any",
-            talent = "Improved Tranquility",
+            talent = GetTalentName[26983],
             talReq = false,
             altCd = 144,
             lvlReq = 30,
@@ -191,7 +193,7 @@ BLT.spells = {
             id = 45438,
             cd = 300,
             spec = "Any",
-            talent = "Ice Floes",
+            talent = GetTalentName[45438],
             talReq = false,
             altCd = 21,
             lvlReq = 30,
@@ -207,7 +209,7 @@ BLT.spells = {
             id = 66233,
             cd = 120,
             spec = "Protection",
-            talent = "Ardent Defender",
+            talent = GetTalentName[66233],
             talReq = true,
             altCd = "nil",
             lvlReq = 40,
@@ -221,7 +223,7 @@ BLT.spells = {
             id = 31821,
             cd = 120,
             spec = "Any",
-            talent = "Aura Mastery",
+            talent = GetTalentName[31821],
             talReq = true,
             altCd = "nil",
             lvlReq = 20,
@@ -230,12 +232,12 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Divine Protection
-        [GetSpellInfo(498)]   = {
+        [GetSpellInfo(498)] = {
             nr = 20,
             id = 498,
             cd = 180,
             spec = "Any",
-            talent = "Sacred Duty",
+            talent = GetTalentName[498],
             talReq = false,
             altCd = 30,
             lvlReq = 6,
@@ -249,7 +251,7 @@ BLT.spells = {
             id = 64205,
             cd = 120,
             spec = "Any",
-            talent = "Divine Sacrifice",
+            talent = GetTalentName[64205],
             talReq = true,
             altCd = "nil",
             lvlReq = 20,
@@ -258,7 +260,7 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Divine Shield
-        [GetSpellInfo(642)]   = {
+        [GetSpellInfo(642)] = {
             nr = 22,
             id = 642,
             cd = 300,
@@ -272,7 +274,7 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Hand of Freedom
-        [GetSpellInfo(1044)]  = {
+        [GetSpellInfo(1044)] = {
             nr = 18,
             id = 1044,
             cd = 25,
@@ -291,7 +293,7 @@ BLT.spells = {
             id = 10278,
             cd = 300,
             spec = "Any",
-            talent = "Guardian's Favor",
+            talent = GetTalentName[10278],
             talReq = false,
             altCd = 60,
             lvlReq = 10,
@@ -300,7 +302,7 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Hand of Sacrifice
-        [GetSpellInfo(6940)]  = {
+        [GetSpellInfo(6940)] = {
             nr = 15,
             id = 6940,
             cd = 120,
@@ -314,7 +316,7 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Hand of Salvation
-        [GetSpellInfo(1038)]  = {
+        [GetSpellInfo(1038)] = {
             nr = 16,
             id = 1038,
             cd = 120,
@@ -333,12 +335,12 @@ BLT.spells = {
             id = 48788,
             cd = 1200,
             spec = "Any",
-            talent = "Improved Lay on Hands",
+            talent = GetTalentName[48788],
             talReq = false,
             altCd = 120,
             lvlReq = 10,
             tar = true,
-            glyph = "Glyph of Lay on Hands",
+            glyph = GetGlyphName[48788],
             glyphCd = 300
         }
     },
@@ -358,7 +360,7 @@ BLT.spells = {
             glyphCd = 0
         },
         -- Fear Ward
-        [GetSpellInfo(6346)]  = {
+        [GetSpellInfo(6346)] = {
             nr = 29,
             id = 6346,
             cd = 180,
@@ -368,21 +370,21 @@ BLT.spells = {
             altCd = "nil",
             lvlReq = 20,
             tar = true,
-            glyph = "Glyph of Fear Ward",
+            glyph = GetGlyphName[6346],
             glyphCd = 60
         },
         -- Dispersion
-        [GetSpellInfo(47585)]  = {
+        [GetSpellInfo(47585)] = {
             nr = 28,
             id = 47585,
             cd = 120,
             spec = "Shadow",
-            talent = "Dispersion",
+            talent = GetTalentName[47585],
             talReq = true,
             altCd = "nil",
             lvlReq = 60,
             tar = true,
-            glyph = "Glyph of Dispersion",
+            glyph = GetGlyphName[47585],
             glyphCd = 45
         },
         -- Guardian Spirit
@@ -391,12 +393,12 @@ BLT.spells = {
             id = 47788,
             cd = 180,
             spec = "Holy",
-            talent = "Guardian Spirit",
+            talent = GetTalentName[47788],
             talReq = true,
             altCd = "nil",
             lvlReq = 60,
             tar = true,
-            glyph = "Glyph of Guardian Spirit",
+            glyph = GetGlyphName[47788],
             glyphCd = 0
         },
         -- Hymn of Hope
@@ -419,7 +421,7 @@ BLT.spells = {
             id = 33206,
             cd = 180,
             spec = "Discipline",
-            talent = "Aspiration",
+            talent = GetTalentName[33206],
             talReq = false,
             altCd = 18,
             lvlReq = 50,
@@ -433,7 +435,7 @@ BLT.spells = {
             id = 10060,
             cd = 120,
             spec = "Discipline",
-            talent = "Aspiration",
+            talent = GetTalentName[10060],
             talReq = false,
             altCd = 12,
             lvlReq = 40,
@@ -449,18 +451,18 @@ BLT.spells = {
             id = 57934,
             cd = 30,
             spec = "Any",
-            talent = "Filthy Tricks",
+            talent = GetTalentName[57934],
             talReq = false,
             altCd = 5,
             lvlReq = 75,
             tar = true,
-            glyph = "Glyph of Tricks of the Trade",
+            glyph = GetGlyphName[57934],
             glyphCd = 0
         }
     },
     ["SHAMAN"] = {
         -- Bloodlust/Heroism
-        [GetSpellInfo(hero)]  = {
+        [GetSpellInfo(hero)] = {
             nr = 30,
             id = hero,
             cd = 300,
@@ -479,7 +481,7 @@ BLT.spells = {
             id = 16190,
             cd = 300,
             spec = "Restoration",
-            talent = "Mana Tide Totem",
+            talent = GetTalentName[16190],
             talReq = true,
             altCd = "nil",
             lvlReq = 40,
@@ -493,7 +495,7 @@ BLT.spells = {
             id = 20608,
             cd = 1800,
             spec = "Any",
-            talent = "Improved Reincarnation",
+            talent = GetTalentName[20608],
             talReq = false,
             altCd = 450,
             lvlReq = 30,
@@ -539,26 +541,26 @@ BLT.spells = {
             id = 12975,
             cd = 180,
             spec = "Protection",
-            talent = "Last Stand",
+            talent = GetTalentName[12975],
             talReq = true,
             altCd = "nil",
             lvlReq = 20,
             tar = false,
-            glyph = "Glyph of Last Stand",
+            glyph = GetGlyphName[12975],
             glyphCd = 60
         },
         -- Shield Wall
-        [GetSpellInfo(871)]   = {
+        [GetSpellInfo(871)] = {
             nr = 11,
             id = 871,
             cd = 300,
             spec = "Any",
-            talent = "Improved Disciplines",
+            talent = GetTalentName[871],
             talReq = false,
             altCd = 30,
             lvlReq = 28,
             tar = false,
-            glyph = "Glyph of Shield Wall",
+            glyph = GetGlyphName[871],
             glyphCd = 120
         }
     }
