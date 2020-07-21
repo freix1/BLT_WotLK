@@ -7,10 +7,10 @@ local Media = LibStub("LibSharedMedia-3.0")
 local LibDualSpec = LibStub("LibDualSpec-1.0")
 BLT.version = "BLT v"..GetAddOnMetadata("BLT", "Version")
 
-local math, max, random, floor = _G.math, _G.max, _G.random, _G.floor
-local select, pairs, unpack, strupper = _G.select, _G.pairs, _G.unpack, _G.strupper
+local math, max, random = _G.math, _G.max, _G.random
+local select, pairs, unpack = _G.select, _G.pairs, _G.unpack
 local tinsert, tremove, tsort, tconcat = table.insert, table.remove, table.sort, table.concat
-local format, upper, find = string.format, string.upper, string.find
+local format, find = string.format, string.find
 local CreateFrame, GameTooltip = CreateFrame, GameTooltip
 local UnitName, UnitClass, UnitExists = UnitName, UnitClass, UnitExists
 local UnitInRaid, UnitInParty = UnitInRaid, UnitInParty
@@ -34,7 +34,7 @@ local defaults = {
         iconFont            = "Friz Quadrata TT",
         iconTextSize        = 28,
         iconTextAnchor      = "CENTER",
-        iconTextColor       = {r = 1, g = 1, b = 1, a = 1},
+        iconTextColor       = { r = 1, g = 1, b = 1, a = 1 },
         barWidth            = 50,
         barHeight           = 50,
         barOffset           = 50,
@@ -44,17 +44,18 @@ local defaults = {
         barTargetTextSize   = 8,
         barCDTextSize       = 11,
         displayTargets      = true,
+        barTargetTextType   = "SEPARATE",
         barTargetTextCutoff = -30,
         barTargetTextAnchor = "LEFT",
-        barTargetTextColor  = {r = 1, g = 1, b = 1, a = 1},
-        barPlayerTextColor  = {r = 1, g = 1, b = 1, a = 1},
-        barCDTextColor      = {r = 1, g = 1, b = 1, a = 1},
+        barTargetTextColor  = { r = 1, g = 1, b = 1, a = 1 },
+        barPlayerTextColor  = { r = 1, g = 1, b = 1, a = 1 },
+        barCDTextColor      = { r = 1, g = 1, b = 1, a = 1 },
         barTargetTextPosX   = 50,
         barTargetTextPosY   = 5,
-        split    	        = 2,
-        texture  	        = "Blizzard",
+        split               = 2,
+        texture             = "Blizzard",
         sorting             = {},
-        cooldowns 	 	    = {
+        cooldowns           = {
             [29166] = true, -- Innervate
             [48477] = true, -- Rebirth
             [34477] = true, -- Misdirection
@@ -112,39 +113,19 @@ local classesInGroup = {}
 local playersInGroup = {}
 local targetTable = {}
 local mainFrame, scaleUI
-local iconTextSize, iconTextSize_Scale
-local iconSize, iconSize_Scale
-local offsetBetweenCooldowns, offsetBetweenCooldowns_Scale
-local cooldownXOffset, cooldownXOffset_Scale
-local barPlayerTextSize, barPlayerTextSize_Scale
-local barCDTextSize, barCDTextSize_Scale
-local barTargetTextSize, barTargetTextSize_Scale
-local cooldownWidth, cooldownWidth_Scale
-local cooldownHeight, cooldownHeight_Scale
-local offsetBetweenIcons, offsetBetweenIcons_Scale
-local edgeOffset, edgeOffset_Scale
-local targetTextPosX, targetTextPosX_Scale, targetTextPosY, targetTextPosY_Scale
+local iconSize, iconSize_Scale, iconTextSize, iconTextSize_Scale
+local offsetBetweenCooldowns, offsetBetweenCooldowns_Scale, cooldownXOffset, cooldownXOffset_Scale
+local barPlayerTextSize, barPlayerTextSize_Scale, barCDTextSize, barCDTextSize_Scale, barTargetTextSize, barTargetTextSize_Scale
+local cooldownWidth, cooldownWidth_Scale, cooldownHeight, cooldownHeight_Scale
+local edgeOffset, edgeOffset_Scale, offsetBetweenIcons, offsetBetweenIcons_Scale
+local targetTextPosX, targetTextPosX_Scale, targetTextPosY, targetTextPosY_Scale, textSplitOffset
+local currentXOffset, currentYOffset, yOffsetMaximum, cooldownCurrentXOffset, cooldownCurrentYOffset
+local cooldownCurrentXOffsetStart, cooldownCurrentYOffsetStart, cooldownBottomMostElementY, cooldownCurrentCounter
 local cooldownForegroundBorderOffset = 4
 local foundAtLeastOne = false
-local currentXOffset, currentYOffset, yOffsetMaximum
-local cooldownCurrentXOffset, cooldownCurrentYOffset
-local cooldownCurrentXOffsetStart, cooldownCurrentYOffsetStart
-local cooldownBottomMostElementY, cooldownCurrentCounter
 local frameColorLocked = { r=0, g=0, b=0, a=0 }
 local frameColor = { r=0, g=0, b=0, a=0.4 }
 local itemColor = { r=0.5, g=0, b=0.9, a=1.0 }
-local classColors = {
-    ["DEATHKNIGHT"] = "C41F3B",
-    ["DRUID"] = "FF7D0A",
-    ["HUNTER"] = "ABD473",
-    ["MAGE"] = "69CCF0",
-    ["PALADIN"] = "F58CBA",
-    ["PRIEST"] = "FFFFFF",
-    ["ROGUE"] = "FFF569",
-    ["SHAMAN"] = "0070DE",
-    ["WARLOCK"] = "9482C9",
-    ["WARRIOR"] = "C79C6E"
-}
 
 
 -- Helper functions --
@@ -152,7 +133,7 @@ function BLT:Unit(name)
     if name then
         local class = select(2, UnitClass(name))
         if class then
-            return format("|r|cFF%s|Hplayer:%s|h[%s]|h|r|cFFbebebe",classColors[strupper(class)],name,name)
+            return format("|r|cFF%s|Hplayer:%s|h[%s]|h|r|cFFbebebe",RAID_CLASS_COLORS[class],name,name)
         else
             return format("|r|cFFffffff%s|r|cFFbebebe",name)
         end
@@ -265,6 +246,7 @@ local function SetupNewScale()
     edgeOffset = 3 * resizeFromPixelPerfect * scaleUI * edgeOffset_Scale
     targetTextPosX = 40 * resizeFromPixelPerfect * scaleUI * targetTextPosX_Scale
     targetTextPosY = 40 * resizeFromPixelPerfect * scaleUI * targetTextPosY_Scale
+    textSplitOffset = math.floor((math.exp(db.barWidth/15) * 2.7 / barPlayerTextSize) + .5) -- Might need some more tweaking
 end
 
 local function CreateBorder(parentFrame, offset, pixels, r, g, b, a, frameLevel, frameReuse)
@@ -335,7 +317,7 @@ local function CooldownFrame_OnEnter(self)
                             if BLT:IsPlayerValidForSpellCooldown(playerName, n) then
                                 local hasCD
                                 for j=1, #cooldown_Frames do
-                                    if cooldown_Frames[j].name == self.name and cooldown_Frames[j].playerName == playerName and cooldown_Frames[j].isUsed then
+                                    if cooldown_Frames[j].name == self.name and cooldown_Frames[j].player == playerName and cooldown_Frames[j].isUsed then
                                         hasCD = true
                                         break
                                     end
@@ -358,7 +340,7 @@ local function CooldownFrame_OnEnter(self)
                         if BLT:IsPlayerValidForItemCooldown(playerName, n) then
                             local hasCD
                             for j=1, #cooldown_Frames do
-                                if cooldown_Frames[j].name == self.name and cooldown_Frames[j].playerName == playerName and cooldown_Frames[j].isUsed then
+                                if cooldown_Frames[j].name == self.name and cooldown_Frames[j].player == playerName and cooldown_Frames[j].isUsed then
                                     hasCD = true
                                     break
                                 end
@@ -386,7 +368,6 @@ local function CooldownFrame_OnLeave()
     GameTooltip:Hide()
 end
 
-
 -- Core functions --
 local f = CreateFrame("Frame")
 f:SetScript("OnUpdate", function(_, elapsed)
@@ -412,31 +393,34 @@ local function HandleEvent(_, event, ...)
             -- Check if a spell was missed/resisted
             if combatEvent == "SPELL_MISSED" then
                 local spellId, spellName = select(9,...)
+                if not contains(trackCooldownSpells, spellName) then return end
                 targetSpellId, targetSpellName = spellId, spellName
 
                 -- Check if a spell was evaded
             elseif combatEvent == "DAMAGE_SHIELD_MISSED" then
                 local spellId, spellName = select(9,...)
+                if not contains(trackCooldownSpells, spellName) then return end
                 targetSpellId, targetSpellName = spellId, spellName
 
                 -- Check if we cast a spell
             elseif combatEvent == "SPELL_CAST_SUCCESS" then
                 local spellId, spellName = select(9,...)
+                if not contains(trackCooldownSpells, spellName) then return end
                 if spellName == GetSpellInfo(57934) or spellName == GetSpellInfo(34477) then -- 'Tricks of the Trade' or 'Misdirection'
                     targetTable[sourceName] = destName
-                else
+                elseif contains(trackCooldownSpellIDs, spellId) then
                     targetSpellId, targetSpellName = spellId, spellName
                 end
-                if spellName == GetSpellInfo(23989) then -- Readiness
+                if spellName == GetSpellInfo(23989) then -- 'Readiness'
                     for i=1, #cooldown_Frames do
-                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == GetSpellInfo(34477) then -- 'Misdirection'
+                        if cooldown_Frames[i].player == sourceName and cooldown_Frames[i].name == GetSpellInfo(34477) then -- 'Misdirection'
                             BLT:UpdateCooldownFrame(cooldown_Frames[i], false)
                             break
                         end
                     end
-                elseif spellName == GetSpellInfo(11958) then -- Cold Snap
+                elseif spellName == GetSpellInfo(11958) then -- 'Cold Snap'
                     for i=1, #cooldown_Frames do
-                        if cooldown_Frames[i].playerName == sourceName and cooldown_Frames[i].name == GetSpellInfo(45438) then -- 'Ice Block'
+                        if cooldown_Frames[i].player == sourceName and cooldown_Frames[i].name == GetSpellInfo(45438) then -- 'Ice Block'
                             BLT:UpdateCooldownFrame(cooldown_Frames[i], false)
                             break
                         end
@@ -446,6 +430,7 @@ local function HandleEvent(_, event, ...)
                 -- Check if we got a spell aura applied
             elseif combatEvent == "SPELL_AURA_APPLIED" then
                 local spellId, spellName = select(9,...)
+                if not contains(trackCooldownSpells, spellName) then return end
                 if spellName == GetSpellInfo(47788) then -- 'Guardian Spirit'
                     if BLT:TimeLeft(BLT.gsTimer) ~= 0 then
                         BLT:CancelTimer(BLT.gsTimer)
@@ -457,6 +442,7 @@ local function HandleEvent(_, event, ...)
 
             elseif combatEvent == "SPELL_AURA_REMOVED" then
                 local spellId, spellName = select(9,...)
+                if not contains(trackCooldownSpells, spellName) then return end
                 -- 'Misdirection' and 'Tricks of the Trade' CDs should only be triggered when successfully procced or cancelled
                 if (spellName == GetSpellInfo(34477) and spellId == 34477) or
                         (spellName == GetSpellInfo(57934) and spellId == 57934) then
@@ -468,7 +454,7 @@ local function HandleEvent(_, event, ...)
                 elseif spellName == GetSpellInfo(47788) then -- 'Guardian Spirit'
                     for i=1, #cooldown_Frames do
                         local frame = cooldown_Frames[i]
-                        if frame.name == spellName and frame.playerName == sourceName and BLT:TimeLeft(BLT.gsTimer) == 0 then
+                        if frame.name == spellName and frame.player == sourceName and BLT:TimeLeft(BLT.gsTimer) == 0 then
                             frame.spellTimestamp = GetTime() + 60
                             frame.maximumCooldown = 60
                             break
@@ -484,65 +470,62 @@ local function HandleEvent(_, event, ...)
 
             elseif combatEvent == "SPELL_RESURRECT" then
                 local spellId, spellName = select(9,...)
+                -- This event is only thrown on the initial 'Rebirth' on a player, all subsequent casts of this spell on
+                -- the same player will not trigger this event until 1 min has passed (the resurrection acceptance timer
+                -- has elapsed)
                 if spellName == GetSpellInfo(48477) then -- 'Rebirth'
                     targetSpellId, targetSpellName = spellId, spellName
                 end
             end
 
-            -- Check if the spell cast is in the list of tracked cooldowns
-            if targetSpellName ~= "" and (contains(trackCooldownSpells, targetSpellName) or (contains(trackItemSpellIDs, targetSpellId) or contains(trackItemSpellIDsHC, targetSpellId))) then
-                -- Check if the caster is in our party/raid
-                if contains(playersInGroup, sourceName) then
-                    -- Check if the role of the caster is what we are looking for
-                    for i=1, #trackCooldownSpells do
-                        if trackCooldownSpells[i] == targetSpellName then
-                            if BLT:IsPlayerValidForSpellCooldown(sourceName, i) and BLT:IsCooldownSpellEnabled(targetSpellName) then
-                                if not trackCooldownTargets[i] then
-                                    destName = nil
-                                end
-                                BLT:CreateCooldownFrame(sourceName, targetSpellName, targetSpellId, destName)
-                                SendAddonMessage("BLT", "CD:"..sourceName..";"..targetSpellName..";"..targetSpellId..";"..(destName or ""), BLT:GetGroupState(), UnitName("player"))
-                                break
-                            end
-                        end
-                    end
-                    for i=1, #trackItems do
-                        if trackItemSpellIDs[i] == targetSpellId or trackItemSpellIDsHC[i] == targetSpellId then
-                            if BLT:IsPlayerValidForItemCooldown(sourceName, i) and BLT:IsCooldownItemEnabled(trackItems[i]) then
-                                BLT:CreateCooldownFrame(sourceName, trackItems[i], trackItemIDs[i], nil, true)
-                                SendAddonMessage("BLT", "CD:"..sourceName..";"..trackItems[i]..";"..trackItemIDs[i]..";;"..tostring(true), BLT:GetGroupState(), UnitName("player"))
-                                break
-                            end
-                        end
-                    end
-                end
-            end
+            BLT:GenerateCooldown(sourceName, destName, targetSpellName, targetSpellId)
         end
+
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        local sourceUnitID, spellName = select(1,...)
+        -- Because the 'SPELL_RESURRECT' event is only thrown once, we have to catch the subsequent casts of 'Rebirth'
+        -- on the same player with this event. However, this event does not provide a target return value, which is
+        -- why we try to get it from the frame that was created by the initially casted 'Rebirth'
+        if spellName == GetSpellInfo(48477) then -- 'Rebirth'
+            local spellId, sourceName = 48477, UnitName(sourceUnitID)
+            BLT:ScheduleTimer("DelayRebirthTimer", 0.1, spellName, spellId, sourceName, GetTime())
+        else
+            return
+        end
+
     elseif event == "CHAT_MSG_ADDON" then
         local prefix, msg = ...
         if prefix ~= "BLT" then return end
         local arg1, arg2 = strsplit(":", msg)
         if arg1 == "CD" then
             local source, name, id, destination, isItem = strsplit(";", arg2)
-            local frameFound, cooldownFound = false, false
-            for i=1, #cooldown_Frames do
-                local frame = cooldown_Frames[i]
+            local iconFound = false
+            for i=1, #icon_Frames do
+                local frame = icon_Frames[i]
                 if frame.name == name then
-                    frameFound = true
-                    if frame.playerName == source then
+                    iconFound = true
+                    break
+                end
+            end
+            if iconFound then
+                local cooldownFound = false
+                for i=1, #cooldown_Frames do
+                    local frame = cooldown_Frames[i]
+                    if frame.name == name and frame.player == source then
                         cooldownFound = true
                         break
                     end
                 end
-            end
-            if frameFound and not cooldownFound then
-                if isItem == "true" and BLT:IsCooldownItemEnabled(name) then
-                    BLT:CreateCooldownFrame(source, name, id, destination, true)
-                elseif BLT:IsCooldownSpellEnabled(name) then
-                    BLT:CreateCooldownFrame(source, name, id, destination)
+                if not cooldownFound then
+                    if isItem == "true" and BLT:IsCooldownItemEnabled(name) then
+                        BLT:CreateCooldownFrame(source, name, id, destination, true)
+                    elseif BLT:IsCooldownSpellEnabled(name) then
+                        BLT:CreateCooldownFrame(source, name, id, destination)
+                    end
                 end
             end
         end
+
     elseif event == "PLAYER_ENTERING_WORLD" then
         local inInstance, instanceType = IsInInstance()
         -- Reset cooldowns upon entering an arena match
@@ -567,7 +550,63 @@ local function HandleEvent(_, event, ...)
         end
     end
 end
+
 function BLT:GuardianSpiritTimer() end
+
+function BLT:DelayRebirthTimer(spellName, spellId, sourceName, time)
+    local foundExistingFrame = false
+    for i=1, #cooldown_Frames do
+        local frame = cooldown_Frames[i]
+        if frame.name == spellName then
+            if frame.player and frame.player == sourceName then
+                foundExistingFrame = true
+                break
+            end
+        end
+    end
+    if not foundExistingFrame then
+        for i=1, #cooldown_Frames do
+            local frame = cooldown_Frames[i]
+            if frame.name == spellName then
+                if frame.time + 60 >= time then
+                    BLT:CreateCooldownFrame(sourceName, spellName, spellId, frame.target)
+                    SendAddonMessage("BLT", "CD:"..sourceName..";"..spellName..";"..spellId..";"..(frame.target or ""), BLT:GetGroupState(), UnitName("player"))
+                end
+            end
+        end
+    end
+end
+
+function BLT:GenerateCooldown(sourceName, destName, spellName, spellId)
+    -- Check if the spell cast is in the list of tracked cooldowns
+    if spellName ~= "" and (contains(trackCooldownSpells, spellName) or (contains(trackItemSpellIDs, spellId) or contains(trackItemSpellIDsHC, spellId))) then
+        -- Check if the caster is in our party/raid
+        if contains(playersInGroup, sourceName) then
+            -- Check if the role of the caster is what we are looking for
+            for i=1, #trackCooldownSpells do
+                if trackCooldownSpells[i] == spellName then
+                    if BLT:IsPlayerValidForSpellCooldown(sourceName, i) and BLT:IsCooldownSpellEnabled(spellName) then
+                        if not trackCooldownTargets[i] then
+                            destName = nil
+                        end
+                        BLT:CreateCooldownFrame(sourceName, spellName, spellId, destName)
+                        SendAddonMessage("BLT", "CD:"..sourceName..";"..spellName..";"..spellId..";"..(destName or ""), BLT:GetGroupState(), UnitName("player"))
+                        break
+                    end
+                end
+            end
+            for i=1, #trackItems do
+                if trackItemSpellIDs[i] == spellId or trackItemSpellIDsHC[i] == spellId then
+                    if BLT:IsPlayerValidForItemCooldown(sourceName, i) and BLT:IsCooldownItemEnabled(trackItems[i]) then
+                        BLT:CreateCooldownFrame(sourceName, trackItems[i], trackItemIDs[i], nil, true)
+                        SendAddonMessage("BLT", "CD:"..sourceName..";"..trackItems[i]..";"..trackItemIDs[i]..";;"..tostring(true), BLT:GetGroupState(), UnitName("player"))
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
 
 function BLT:OnInitialize()
     self.db = LibStub("AceDB-3.0"):New("BLT_DB", defaults, "Default")
@@ -614,7 +653,7 @@ function BLT:OnProfileChanged(event, database, newProfileKey)
 end
 
 function BLT:SetupOptions()
-    AC:RegisterOptionsTable(L["BLT"], self.options)
+    AC:RegisterOptionsTable("BLT", self.options)
     AC:RegisterOptionsTable(L["BLT Commands"], self.commands, "blt")
     ACR:RegisterOptionsTable("BLT_Show When...", self.options.args.show)
     ACR:RegisterOptionsTable("BLT_Icons", self.options.args.icons)
@@ -625,7 +664,7 @@ function BLT:SetupOptions()
     LibDualSpec:EnhanceOptions(LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db), self.db)
 
     self.optionsFrames = {}
-    self.optionsFrames.BLT = ACD:AddToBlizOptions(L["BLT"], self.version, nil, "general")
+    self.optionsFrames.BLT = ACD:AddToBlizOptions("BLT", self.version, nil, "general")
     self.optionsFrames.Show = ACD:AddToBlizOptions("BLT_Show When...", L["Show When..."], self.version)
     self.optionsFrames.Icon = ACD:AddToBlizOptions("BLT_Icons", L["Icons"], self.version)
     self.optionsFrames.Bar = ACD:AddToBlizOptions("BLT_Bars", L["Bars"], self.version)
@@ -688,8 +727,6 @@ function BLT:CreateMainFrame()
     mainFrame:SetPoint("CENTER")
     mainFrame:SetScript("OnDragStart", function(s) s:StartMoving() end)
     mainFrame:SetScript("OnDragStop", function(s) s:StopMovingOrSizing(); BLT:SetAnchors() end)
-    mainFrame:SetWidth(200)
-    mainFrame:SetHeight(200)
     local texture = mainFrame:CreateTexture("ARTWORK")
     texture:SetAllPoints()
     texture:SetTexture(frameColorLocked.r, frameColorLocked.g, frameColorLocked.b, frameColorLocked.a)
@@ -700,6 +737,7 @@ function BLT:CreateMainFrame()
 
     -- Register all events we need
     mainFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+    mainFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     mainFrame:RegisterEvent("CHAT_MSG_ADDON")
     mainFrame:SetScript("OnEvent", HandleEvent)
@@ -735,7 +773,7 @@ function BLT:CreateIconFrame(name, id, class, isItem)
         frame.innerBorder = CreateBorder(frame, -1 - db.iconBorderSize, 1, 0, 0, 0, 0.7, frame:GetFrameLevel() + 2)
         frame.outerBorder = CreateBorder(frame, 0, 1, 0, 0, 0, 0.8, frame:GetFrameLevel() + 2)
         if class then
-            local playerClassColor = RAID_CLASS_COLORS[upper(class):gsub(" ", "")]
+            local playerClassColor = RAID_CLASS_COLORS[class]
             if playerClassColor then
                 frame.colorBorder = CreateBorder(frame, -1, db.iconBorderSize,  playerClassColor.r,  playerClassColor.g, playerClassColor.b, 1, frame:GetFrameLevel() + 1)
             end
@@ -763,11 +801,11 @@ function BLT:CreateIconFrame(name, id, class, isItem)
     return #icon_Frames
 end
 
-function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
+function BLT:CreateCooldownFrame(player, name, id, target, isItem)
     -- Check if we do not already have a frame with this name
     local frame
     for i=1, #cooldown_Frames do
-        if cooldown_Frames[i].playerName == playerName and cooldown_Frames[i].name == name then
+        if cooldown_Frames[i].player == player and cooldown_Frames[i].name == name then
             frame = cooldown_Frames[i]
             tremove(cooldown_Frames, i)
             tinsert(cooldown_Frames, frame)
@@ -786,9 +824,10 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
         texture1:SetAllPoints()
         texture1:SetVertexColor(cooldownColor.r, cooldownColor.g, cooldownColor.b, cooldownColor.a)
         frame.texture = texture1
-        frame.playerName = playerName:match("[^-]+")
+        frame.player = player:match("[^-]+")
         frame.name = name
         frame.id = id
+        frame.time = GetTime()
         frame:SetPoint("TOPLEFT", 0, 0)
         frame:SetFrameLevel(2)
 
@@ -809,7 +848,6 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
         CreateBorder(frameBackground, 0, 1, 0, 0, 0, 0.8, frame:GetFrameLevel() + 1)
 
         local fontFrame = CreateFrame("Frame", "TrackCooldownFontFrame_" .. #cooldown_Frames, frameBackground)
-
         local texture3 = fontFrame:CreateTexture(nil, "BACKGROUND")
         texture3:SetAllPoints()
         texture3:SetTexture(0, 0, 0, 0)
@@ -837,7 +875,7 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
 
         tinsert(cooldown_Frames, frame)
     end
-    local maximumCooldown = db.debugBars and random(5, 80) or self:GetMaximumCooldown(name, playerName, isItem)
+    local maximumCooldown = db.debugBars and random(5, 80) or self:GetMaximumCooldown(name, player, isItem)
     frame.spellTimestamp = GetTime() + maximumCooldown
     frame.maximumCooldown = maximumCooldown
     frame:Show()
@@ -854,10 +892,10 @@ function BLT:CreateCooldownFrame(playerName, name, id, target, isItem)
         end
     end
     if not class then
-        class = UnitClass(playerName)
+        class = select(2, UnitClass(player))
     end
     if class then
-        local playerClassColor = RAID_CLASS_COLORS[upper(class):gsub(" ", "")]
+        local playerClassColor = RAID_CLASS_COLORS[class]
         if playerClassColor then
             frame.texture:SetVertexColor(cooldownColor.r * playerClassColor.r, cooldownColor.g * playerClassColor.g, cooldownColor.b * playerClassColor.b, cooldownColor.a)
             frame.frameBackground.texture:SetVertexColor(cooldownBackgroundColor.r * playerClassColor.r, cooldownBackgroundColor.g * playerClassColor.g, cooldownBackgroundColor.b * playerClassColor.b, cooldownBackgroundColor.a)
@@ -937,7 +975,7 @@ function BLT:UpdateUI()
                             local frame = icon_Frames[index]
                             frame.num = db.useCustomSorting and db.sorting[trackCooldownSpellIDs[n]] or sortNr[n]
                             frame:Show()
-                            if not UnitIsDeadOrGhost(playerName) or trackCooldownSpellIDs[n] == 20608 then -- Reincarnation is usable while dead
+                            if not UnitIsDeadOrGhost(playerName) or trackCooldownSpellIDs[n] == 20608 then -- 'Reincarnation' is usable while dead
                                 frame.count = frame.count + 1
                             end
                         end
@@ -989,7 +1027,7 @@ function BLT:UpdateUI()
         end
         if isInUse == false then
             db.debugBars = false
-            ACR:NotifyChange(L["Bars"])
+            ACR:NotifyChange("BLT")
         end
     end
 
@@ -1055,13 +1093,14 @@ function BLT:UpdateUISize()
 
         frame.frameBackground:SetWidth(cooldownWidth)
         frame.frameBackground:SetHeight(cooldownHeight)
+
         ModifyFontString(frame.fontString, Media:Fetch("font", db.barFont), barPlayerTextSize, "OUTLINE", db.barPlayerTextColor)
         ModifyFontString(frame.fontString2, Media:Fetch("font", db.barFont), barCDTextSize, "OUTLINE", db.barCDTextColor)
         ModifyFontString(frame.fontString3, Media:Fetch("font", db.barFont), barTargetTextSize, "OUTLINE", db.barTargetTextColor, "TOPLEFT", "BOTTOMRIGHT", frame.fontFrame, "TOPLEFT", "BOTTOMRIGHT", targetTextPosX, targetTextPosY, db.barTargetTextCutoff, targetTextPosY*1.5, db.barTargetTextAnchor)
     end
 end
 
-function BLT:GetPlayerCooldowns(frame)
+function BLT:GetReadyPlayerCooldowns(frame)
     local players = {}
     for i=1, #classesInGroup do
         local playerName = playersInGroup[i]
@@ -1072,7 +1111,7 @@ function BLT:GetPlayerCooldowns(frame)
                         if BLT:IsPlayerValidForSpellCooldown(playerName, n) then
                             local hasCD
                             for j=1, #cooldown_Frames do
-                                if cooldown_Frames[j].name == frame.name and cooldown_Frames[j].playerName == playerName and cooldown_Frames[j].isUsed then
+                                if cooldown_Frames[j].name == frame.name and cooldown_Frames[j].player == playerName and cooldown_Frames[j].isUsed then
                                     hasCD = true
                                     break
                                 end
@@ -1089,7 +1128,7 @@ function BLT:GetPlayerCooldowns(frame)
                     if BLT:IsPlayerValidForItemCooldown(playerName, n) then
                         local hasCD
                         for j=1, #cooldown_Frames do
-                            if cooldown_Frames[j].name == frame.name and cooldown_Frames[j].playerName == playerName and cooldown_Frames[j].isUsed then
+                            if cooldown_Frames[j].name == frame.name and cooldown_Frames[j].player == playerName and cooldown_Frames[j].isUsed then
                                 hasCD = true
                                 break
                             end
@@ -1150,11 +1189,12 @@ function BLT:UpdateIconFrame(index)
         -- Shift-Click on an icon will print whose cooldowns are ready to be used
         frame:SetScript("OnMouseDown", function()
             if IsShiftKeyDown() then
-                local players = self:GetPlayerCooldowns(frame)
+                local players = self:GetReadyPlayerCooldowns(frame)
                 if GetNumPartyMembers() ~= 0 then
                     SendChatMessage(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), next(players) and tconcat(players, ", ") or "—"), BLT:GetGroupState())
                 else
                     self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id)), next(players) and tconcat(players, ", ") or "—"))
+                    SendCharMessage(("%s"):format(), BLT:GetGroupState())
                 end
             end
         end)
@@ -1175,9 +1215,9 @@ function BLT:UpdateCooldownFrame(frame, show)
     local fontFrame = frame.fontFrame
 
     -- Check if we should show the frame
-    if show and (UnitIsConnected(frame.playerName) or db.debugBars) then
+    if show and (UnitIsConnected(frame.player) or db.debugBars) then
         -- Check if the current frame is used
-        if frame.isUsed and (UnitInRaid(frame.playerName) or UnitInParty(frame.playerName) or UnitName("player") == frame.playerName or db.debugBars) then
+        if frame.isUsed and (UnitInRaid(frame.player) or UnitInParty(frame.player) or UnitName("player") == frame.player or db.debugBars) then
             -- Set the position of the current frame
             frameBackground:SetPoint("TOPLEFT", cooldownCurrentXOffset, -cooldownCurrentYOffset)
             frame:SetPoint("TOPLEFT", cooldownCurrentXOffset + (cooldownForegroundBorderOffset * 0.5), -cooldownCurrentYOffset - (cooldownForegroundBorderOffset * 0.5))
@@ -1195,27 +1235,32 @@ function BLT:UpdateCooldownFrame(frame, show)
             frame:SetWidth((cooldownWidth - cooldownForegroundBorderOffset) * percentage)
 
             -- Set the text of the current frame
-            frame.fontString:SetText(frame.playerName)
+            frame.fontString:SetText(frame.player)
             frame.fontString2:SetText(FormatCooldownText(cooldownLeft))
+
             if db.displayTargets and frame.target then
-                frame.fontString3:SetText(frame.target)
-            else
-                frame.fontString3:SetText("")
+                if db.barTargetTextType == "SEPARATE" then
+                    frame.fontString3:SetText(frame.target)
+                else
+                    -- Credit to Bog/Jezz for this option
+                    frame.fontString:SetText(string.sub(frame.player, 1, textSplitOffset) .. " > " .. string.sub(frame.target, 1, textSplitOffset))
+                    frame.fontString3:SetText("")
+                end
             end
 
             -- Shift-Click on the current frame will print when the cooldown will be ready in chat
             frameBackground:SetScript("OnMouseDown", function()
                 if IsShiftKeyDown() then
                     if GetNumPartyMembers() ~= 0 then
-                        SendChatMessage(L["%s's %s will be ready in %s"]:format(frame.playerName, contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), FormatCooldownText(cooldownLeft,true)), BLT:GetGroupState())
+                        SendChatMessage(L["%s's %s will be ready in %s%s"]:format(frame.player, contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), FormatCooldownText(cooldownLeft,true), frame.target and L[" (used on %s)"]:format(frame.target) or ""), BLT:GetGroupState())
                     else
-                        self:Print(L["%s's %s will be ready in %s"]:format(self:Unit(frame.playerName), contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id), FormatCooldownText(cooldownLeft,true)))
+                        self:Print(L["%s's %s will be ready in %s%s"]:format(self:Unit(frame.player), contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id), FormatCooldownText(cooldownLeft,true), frame.target and L[" (used on %s)"]:format(frame.target) or ""))
                     end
                 end
             end)
 
             -- Check if the current frame has no cooldown left
-            if cooldownLeft < 0 then
+            if cooldownLeft <= 0 then
                 -- Set that the frame is not used anymore
                 frame.isUsed = false
                 frameBackground:Hide()
@@ -1223,7 +1268,7 @@ function BLT:UpdateCooldownFrame(frame, show)
                 frame:Hide()
 
                 if db.message then
-                    self:Print(L["%s's %s is ready!"]:format(self:Unit(frame.playerName), contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id)))
+                    self:Print(L["%s's %s is ready!"]:format(self:Unit(frame.player), contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id)))
                 end
             else
                 -- Go to the next position
@@ -1259,7 +1304,7 @@ function BLT:UpdateIconBorders()
         CreateBorder(frame, 0, 1, 0, 0, 0, 0.8, frame:GetFrameLevel() + 2, frame.innerBorder)
 
         if frame.class then
-            local playerClassColor = RAID_CLASS_COLORS[upper(frame.class):gsub(" ", "")]
+            local playerClassColor = RAID_CLASS_COLORS[frame.class]
             if playerClassColor then
                 CreateBorder(frame, -1, db.iconBorderSize, playerClassColor.r, playerClassColor.g, playerClassColor.b, 1, frame:GetFrameLevel() + 1, frame.colorBorder)
             end
@@ -1293,11 +1338,14 @@ function BLT:DebugCooldownBars()
         for n=1, #icon_Frames do
             local frame = icon_Frames[n]
             local name = frame.name
+            local class = frame.class
             local id = frame.id
             local isItem = frame.isItem
 
             for i=1, 7 do
-                local testFrame = self:CreateCooldownFrame("Test" .. i, name, id, db.displayTargets and L["Target"] .. i+1 or nil, isItem)
+                local testFrame = self:CreateCooldownFrame("Test" .. i, name, id, (db.displayTargets and
+                        not isItem and BLT.spells[class][name].tar) and L["Target"] .. i+1 or nil, isItem)
+                testFrame.class = class
                 testFrame.isTest = true
             end
         end
@@ -1322,12 +1370,12 @@ function BLT:IsCooldownItemEnabled(itemName)
     return true
 end
 
-function BLT:IsPlayerValidForSpellCooldown(playerName, index)
-    if self.playerSpecs[playerName] and self.playerLevel[playerName] >= trackLvlRequirement[index] then
-        if trackCooldownSpecs[index] == self.playerSpecs[playerName] or trackCooldownSpecs[index] == "Any" then
+function BLT:IsPlayerValidForSpellCooldown(player, index)
+    if self.playerSpecs[player] and self.playerLevel[player] >= trackLvlRequirement[index] then
+        if trackCooldownSpecs[index] == self.playerSpecs[player] or trackCooldownSpecs[index] == "Any" then
             if trackTalents[index] == "nil" or (trackTalents[index] ~= "nil" and talentRequired[index] == false) then
                 return true
-            elseif self.playerTalentsSpecced[playerName] and contains(self.playerTalentsSpecced[playerName], trackTalents[index], true) then
+            elseif self.playerTalentsSpecced[player] and contains(self.playerTalentsSpecced[player], trackTalents[index], true) then
                 return true
             end
         end
@@ -1335,14 +1383,14 @@ function BLT:IsPlayerValidForSpellCooldown(playerName, index)
     return false
 end
 
-function BLT:IsPlayerValidForItemCooldown(playerName, index)
-    if self.playerEquipment[playerName] and contains(self.playerEquipment[playerName], trackItems[index]) then
+function BLT:IsPlayerValidForItemCooldown(player, index)
+    if self.playerEquipment[player] and contains(self.playerEquipment[player], trackItems[index]) then
         return true
     end
     return false
 end
 
-function BLT:GetMaximumCooldown(name, playerName, isItem)
+function BLT:GetMaximumCooldown(name, player, isItem)
     if isItem then
         for i=1, #trackItems do
             if trackItems[i] == name then
@@ -1353,9 +1401,9 @@ function BLT:GetMaximumCooldown(name, playerName, isItem)
         local cooldown = 0
         for i=1, #trackCooldownSpells do
             if trackCooldownSpells[i] == name and
-                    (trackCooldownSpecs[i] == "Any" or trackCooldownSpecs[i] == self.playerSpecs[playerName]) then
-                if self.playerTalentsSpecced[playerName] and contains(self.playerTalentsSpecced[playerName],trackTalents[i],true) then
-                    for talent,rank in pairs(self.playerTalentsSpecced[playerName]) do
+                    (trackCooldownSpecs[i] == "Any" or trackCooldownSpecs[i] == self.playerSpecs[player]) then
+                if self.playerTalentsSpecced[player] and contains(self.playerTalentsSpecced[player],trackTalents[i],true) then
+                    for talent,rank in pairs(self.playerTalentsSpecced[player]) do
                         if talent == trackTalents[i] then
                             if trackCooldownAlternativeSpellCooldown[i] ~= "nil" then
                                 cooldown = trackCooldownSpellCooldown[i] - (trackCooldownAlternativeSpellCooldown[i] * rank)
@@ -1369,7 +1417,7 @@ function BLT:GetMaximumCooldown(name, playerName, isItem)
                 else
                     cooldown = trackCooldownSpellCooldown[i]
                 end
-                if self.playerGlyphs[playerName] and find(self.playerGlyphs[playerName], trackGlyphs[i]) then
+                if self.playerGlyphs[player] and find(self.playerGlyphs[player], trackGlyphs[i]) then
                     cooldown = cooldown - trackGlyphCooldown[i]
                 end
             end
@@ -1456,7 +1504,7 @@ function BLT:SetAnchors(useDB, conf)
         if conf then
             x, y = db.posX, db.posY-yOffsetMaximum
         else
-            x, y = db.posX, db.posY-200
+            x, y = db.posX, db.posY -- If the mainframe has a height defined, then we need to subtract it here
         end
         if x and y then
             mainFrame:ClearAllPoints()
@@ -1466,7 +1514,7 @@ function BLT:SetAnchors(useDB, conf)
             mainFrame:SetPoint("CENTER", 0, 0)
         end
     else
-        x, y = floor(mainFrame:GetLeft() + 0.5), floor(mainFrame:GetTop() + 0.5)
+        x, y = math.floor(mainFrame:GetLeft() + 0.5), math.floor(mainFrame:GetTop() + 0.5)
         db.posX, db.posY = x, y
     end
     ACR:NotifyChange("BLT")

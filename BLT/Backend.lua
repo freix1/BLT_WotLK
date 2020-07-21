@@ -13,16 +13,16 @@ local addonUsers = {}
 local inspectedUnits = {}
 local updateCooldownTimer = 0
 local classSpecs = {
-    ["DRUID"] =   		{ [1] = "Balance",       [2] = "Feral",        [3] = "Restoration" },
-    ["DEATHKNIGHT"] = 	{ [1] = "Blood",     	 [2] = "Frost",        [3] = "Unholy"      },
-    ["MAGE"] =    		{ [1] = "Arcane",        [2] = "Fire",         [3] = "Frost"       },
-    ["PRIEST"] =  		{ [1] = "Discipline",    [2] = "Holy",         [3] = "Shadow"      },
-    ["ROGUE"] =   		{ [1] = "Assassination", [2] = "Combat",       [3] = "Subtlety"    },
-    ["WARRIOR"] = 		{ [1] = "Arms",          [2] = "Fury",         [3] = "Protection"  },
-    ["HUNTER"] =  		{ [1] = "Beastmastery",  [2] = "Marksmanship", [3] = "Survival"    },
-    ["PALADIN"] = 		{ [1] = "Holy",          [2] = "Protection",   [3] = "Retribution" },
-    ["SHAMAN"] =  		{ [1] = "Elemental",     [2] = "Enhancement",  [3] = "Restoration" },
-    ["WARLOCK"] = 		{ [1] = "Affliction",    [2] = "Demonology",   [3] = "Destruction" }
+    ["DRUID"] =         { [1] = "Balance",       [2] = "Feral",        [3] = "Restoration" },
+    ["DEATHKNIGHT"] =   { [1] = "Blood",         [2] = "Frost",        [3] = "Unholy"      },
+    ["MAGE"] =          { [1] = "Arcane",        [2] = "Fire",         [3] = "Frost"       },
+    ["PRIEST"] =        { [1] = "Discipline",    [2] = "Holy",         [3] = "Shadow"      },
+    ["ROGUE"] =         { [1] = "Assassination", [2] = "Combat",       [3] = "Subtlety"    },
+    ["WARRIOR"] =       { [1] = "Arms",          [2] = "Fury",         [3] = "Protection"  },
+    ["HUNTER"] =        { [1] = "Beastmastery",  [2] = "Marksmanship", [3] = "Survival"    },
+    ["PALADIN"] =       { [1] = "Holy",          [2] = "Protection",   [3] = "Retribution" },
+    ["SHAMAN"] =        { [1] = "Elemental",     [2] = "Enhancement",  [3] = "Restoration" },
+    ["WARLOCK"] =       { [1] = "Affliction",    [2] = "Demonology",   [3] = "Destruction" }
 }
 
 -- Addon-specific variables --

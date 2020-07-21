@@ -7,22 +7,22 @@ local GetTalentName = BLT_TalentNames
 local GetGlyphName  = BLT_GlyphNames
 
 --[[
-	["Localized Spell Name"] = {
-		nr = 1,	        -- Sort number
-		id = 12345, 	-- Spell ID
-		cd = 123,   	-- Spell cooldown (sec)
-		spec = "Any",	-- Class specialization
-		talent = "nil",	-- Talent to check
-		talReq = true,	-- Talent requirement
-		altCd = 456,	-- Talent cooldown reduction
-		lvlReq = 80,    -- Level requirement
-		tar = true,     -- Spell has a target
-		glyph = "nil",  -- Glyph name
-		glyphCd = 567   -- Glyph cooldown reduction
-	}
+    ["Localized Spell Name"] = {
+        nr = 1,	        -- Sort number (do NOT use a sort number twice)
+        id = 12345,     -- Spell ID
+        cd = 123,       -- Spell cooldown (sec)
+        spec = "Any",   -- Class specialization
+        talent = "nil", -- Talent to check
+        talReq = true,  -- Talent requirement
+        altCd = 456,    -- Talent cooldown reduction ([cd] - [altCd] * [spent points in talent] = [cd with reduction])
+        lvlReq = 80,    -- Level requirement
+        tar = true,     -- Spell has a target
+        glyph = "nil",  -- Glyph name
+        glyphCd = 567   -- Glyph cooldown reduction
+    }
 
-	- We assume that every Discipline Priest has specced into 'Pain Suppression' and 'Power Infusion'.
-	- The WoW API doesn't allow us to track other players glyphs. However, there is a mechanism in place where people, that also have this addon, share glyph information with each other and their glyphs will be taken into consideration.
+    - We assume that every Discipline Priest has specced into 'Pain Suppression' and 'Power Infusion'.
+    - The WoW API doesn't allow us to track other players glyphs. However, there is a mechanism in place where people, that also have this addon, share glyph information with each other and their glyphs will be taken into consideration.
 ]]
 local hero = (UnitFactionGroup("player") == "Alliance") and 32182 or 2825
 BLT.spells = {
@@ -567,15 +567,15 @@ BLT.spells = {
 }
 
 --[[
-	["Localized Item Name"] = {
-		nr = 1,	           -- Sort number
-		spellId = 12345,   -- Spell ID Normal
-		spellIdHc = 23456, -- Spell ID Heroic
-		itemId = 34567,    -- Item ID (doesn't matter if Normal or Heroic version)
-		cd = 123           -- Item cooldown (sec)
-	}
+    ["Localized Item Name"] = {
+        nr = 1,	           -- Sort number (do NOT use a sort number twice),
+        spellId = 12345,   -- Spell ID Normal
+        spellIdHc = 23456, -- Spell ID Heroic
+        itemId = 34567,    -- Item ID (doesn't matter if Normal or Heroic version)
+        cd = 123           -- Item cooldown (sec)
+    }
 
-	- GetItemInfo will only return item information if it is directly available in memory! Because of this we store all localized item names in a table by ourselves to avoid empty results.
+    - GetItemInfo will only return item information if it is directly available in memory! Because of this we store all localized item names in a table by ourselves to avoid empty results.
 ]]
 BLT.items = {
     ["ITEMS"] = {
