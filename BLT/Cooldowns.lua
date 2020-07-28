@@ -8,7 +8,7 @@ local GetGlyphName  = BLT_GlyphNames
 
 --[[
     ["Localized Spell Name"] = {
-        nr = 1,	        -- Sort number (do NOT use a sort number twice)
+        nr = 1,         -- Sort number (do NOT use a sort number twice)
         id = 12345,     -- Spell ID
         cd = 123,       -- Spell cooldown (sec)
         spec = "Any",   -- Class specialization
@@ -568,7 +568,7 @@ BLT.spells = {
 
 --[[
     ["Localized Item Name"] = {
-        nr = 1,	           -- Sort number (do NOT use a sort number twice),
+        nr = 1,            -- Sort number (do NOT use a sort number twice),
         spellId = 12345,   -- Spell ID Normal
         spellIdHc = 23456, -- Spell ID Heroic
         itemId = 34567,    -- Item ID (doesn't matter if Normal or Heroic version)

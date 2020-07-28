@@ -126,14 +126,25 @@ local foundAtLeastOne = false
 local frameColorLocked = { r=0, g=0, b=0, a=0 }
 local frameColor = { r=0, g=0, b=0, a=0.4 }
 local itemColor = { r=0.5, g=0, b=0.9, a=1.0 }
-
+local classColors = {
+    ["DEATHKNIGHT"] = "C41F3B",
+    ["DRUID"] = "FF7D0A",
+    ["HUNTER"] = "ABD473",
+    ["MAGE"] = "69CCF0",
+    ["PALADIN"] = "F58CBA",
+    ["PRIEST"] = "FFFFFF",
+    ["ROGUE"] = "FFF569",
+    ["SHAMAN"] = "0070DE",
+    ["WARLOCK"] = "9482C9",
+    ["WARRIOR"] = "C79C6E"
+}
 
 -- Helper functions --
 function BLT:Unit(name)
     if name then
         local class = select(2, UnitClass(name))
         if class then
-            return format("|r|cFF%s|Hplayer:%s|h[%s]|h|r|cFFbebebe",RAID_CLASS_COLORS[class],name,name)
+            return format("|r|cFF%s|Hplayer:%s|h[%s]|h|r|cFFbebebe",classColors[class],name,name)
         else
             return format("|r|cFFffffff%s|r|cFFbebebe",name)
         end
