@@ -416,10 +416,10 @@ local function HandleEvent(_, event, ...)
                 -- Check if we cast a spell
             elseif combatEvent == "SPELL_CAST_SUCCESS" then
                 local spellId, spellName = select(9,...)
-                if not contains(trackCooldownSpells, spellName) and not contains(trackItemSpellIDs, spellId) then return end
+                if not contains(trackCooldownSpells, spellName) and not contains(trackItemSpellIDs, spellId) and not contains(trackItemSpellIDsHC, spellId) then return end
                 if spellName == GetSpellInfo(57934) or spellName == GetSpellInfo(34477) then -- 'Tricks of the Trade' or 'Misdirection'
                     targetTable[sourceName] = destName
-                elseif contains(trackCooldownSpellIDs, spellId) or contains(trackItemSpellIDs, spellId) then
+                elseif contains(trackCooldownSpellIDs, spellId) or contains(trackItemSpellIDs, spellId) or contains(trackItemSpellIDsHC, spellId) then
                     targetSpellId, targetSpellName = spellId, spellName
                 end
                 if spellName == GetSpellInfo(23989) then -- 'Readiness'
@@ -1159,7 +1159,7 @@ function BLT:UpdateIconFrame(index)
     -- Check if the current frame is used
     local frame = icon_Frames[index]
     local name = frame.name
-
+    local selfPlayerName = UnitName("player")
     -- Update the cooldown frames of the spell icon
     cooldownBottomMostElementY = 0
     cooldownCurrentCounter = 0
@@ -1205,10 +1205,10 @@ function BLT:UpdateIconFrame(index)
                 if GetNumPartyMembers() ~= 0 then
                     SendChatMessage(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), next(players) and tconcat(players, ", ") or "—"), BLT:GetGroupState())
                 else
-                    self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id)), next(players) and tconcat(players, ", ") or "—"))
-                    SendCharMessage(("%s"):format(), BLT:GetGroupState())
+                    self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id), next(players) and tconcat(players, ", ") or "—"))
+                    -- SendCharMessage(("%s"):format(), BLT:GetGroupState())
                 end
-            else if IsControlKeyDown() then
+            elseif IsControlKeyDown() then
                 local players = self:GetReadyPlayerCooldowns(frame)
 
                 for key,player in pairs(players) do
