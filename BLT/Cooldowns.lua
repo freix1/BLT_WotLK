@@ -39,7 +39,8 @@ BLT.spells = {
             lvlReq = 55,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Anti-Magic Shell
         [GetSpellInfo(48707)] = {
@@ -53,7 +54,8 @@ BLT.spells = {
             lvlReq = 68,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Icebound Fortitude
         [GetSpellInfo(48792)] = {
@@ -67,7 +69,8 @@ BLT.spells = {
             lvlReq = 62,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Vampiric Blood
         [GetSpellInfo(55233)] = {
@@ -81,7 +84,8 @@ BLT.spells = {
             lvlReq = 55,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "tank"
         },
         -- Hysteria
         [GetSpellInfo(49016)] = {
@@ -95,7 +99,8 @@ BLT.spells = {
             lvlReq = 55,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["DRUID"] = {
@@ -111,7 +116,8 @@ BLT.spells = {
             lvlReq = 44,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "tank"
         },
         -- Innervate
         [GetSpellInfo(29166)] = {
@@ -125,7 +131,8 @@ BLT.spells = {
             lvlReq = 40,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Rebirth
         [GetSpellInfo(48477)] = {
@@ -139,7 +146,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Survival Instincts
         [GetSpellInfo(61336)] = {
@@ -153,7 +161,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "tank"
         },
         -- Tranquility
         [GetSpellInfo(26983)] = {
@@ -167,7 +176,8 @@ BLT.spells = {
             lvlReq = 30,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "healer"
         }
     },
     ["HUNTER"] = {
@@ -183,7 +193,8 @@ BLT.spells = {
             lvlReq = 70,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["MAGE"] = {
@@ -199,7 +210,8 @@ BLT.spells = {
             lvlReq = 30,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["PALADIN"] = {
@@ -215,7 +227,8 @@ BLT.spells = {
             lvlReq = 40,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Aura Mastery
         [GetSpellInfo(31821)] = {
@@ -229,7 +242,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Divine Protection
         [GetSpellInfo(498)] = {
@@ -243,7 +257,8 @@ BLT.spells = {
             lvlReq = 6,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "tank"
         },
         -- Divine Sacrifice
         [GetSpellInfo(64205)] = {
@@ -257,7 +272,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Divine Shield
         [GetSpellInfo(642)] = {
@@ -271,7 +287,8 @@ BLT.spells = {
             lvlReq = 34,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Hand of Freedom
         [GetSpellInfo(1044)] = {
@@ -285,7 +302,8 @@ BLT.spells = {
             lvlReq = 18,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Hand of Protection
         [GetSpellInfo(10278)] = {
@@ -299,7 +317,8 @@ BLT.spells = {
             lvlReq = 10,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Hand of Sacrifice
         [GetSpellInfo(6940)] = {
@@ -313,7 +332,8 @@ BLT.spells = {
             lvlReq = 46,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Hand of Salvation
         [GetSpellInfo(1038)] = {
@@ -327,7 +347,8 @@ BLT.spells = {
             lvlReq = 26,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Lay on Hands
         [GetSpellInfo(48788)] = {
@@ -341,7 +362,8 @@ BLT.spells = {
             lvlReq = 10,
             tar = true,
             glyph = GetGlyphName[48788],
-            glyphCd = 300
+            glyphCd = 300,
+            role = "nil"
         }
     },
     ["PRIEST"] = {
@@ -357,7 +379,8 @@ BLT.spells = {
             lvlReq = 80,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "healer"
         },
         -- Fear Ward
         [GetSpellInfo(6346)] = {
@@ -371,7 +394,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = true,
             glyph = GetGlyphName[6346],
-            glyphCd = 60
+            glyphCd = 60,
+            role = "nil"
         },
         -- Dispersion
         [GetSpellInfo(47585)] = {
@@ -385,7 +409,8 @@ BLT.spells = {
             lvlReq = 60,
             tar = true,
             glyph = GetGlyphName[47585],
-            glyphCd = 45
+            glyphCd = 45,
+            role = "nil"
         },
         -- Guardian Spirit
         [GetSpellInfo(47788)] = {
@@ -399,7 +424,8 @@ BLT.spells = {
             lvlReq = 60,
             tar = true,
             glyph = GetGlyphName[47788],
-            glyphCd = 0
+            glyphCd = 0,
+            role = "healer"
         },
         -- Hymn of Hope
         [GetSpellInfo(64901)] = {
@@ -413,7 +439,8 @@ BLT.spells = {
             lvlReq = 80,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Pain Suppression
         [GetSpellInfo(33206)] = {
@@ -427,7 +454,8 @@ BLT.spells = {
             lvlReq = 50,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "healer"
         },
         -- Power Infusion
         [GetSpellInfo(10060)] = {
@@ -441,7 +469,8 @@ BLT.spells = {
             lvlReq = 40,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "healer"
         }
     },
     ["ROGUE"] = {
@@ -457,7 +486,8 @@ BLT.spells = {
             lvlReq = 75,
             tar = true,
             glyph = GetGlyphName[57934],
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["SHAMAN"] = {
@@ -473,7 +503,8 @@ BLT.spells = {
             lvlReq = 70,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Mana Tide Totem
         [GetSpellInfo(16190)] = {
@@ -487,7 +518,8 @@ BLT.spells = {
             lvlReq = 40,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Reincarnation
         [GetSpellInfo(20608)] = {
@@ -501,7 +533,8 @@ BLT.spells = {
             lvlReq = 30,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["WARLOCK"] = {
@@ -517,7 +550,8 @@ BLT.spells = {
             lvlReq = 66,
             tar = false,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         },
         -- Soulstone Resurrection
         [GetSpellInfo(47883)] = {
@@ -531,7 +565,8 @@ BLT.spells = {
             lvlReq = 18,
             tar = true,
             glyph = "nil",
-            glyphCd = 0
+            glyphCd = 0,
+            role = "nil"
         }
     },
     ["WARRIOR"] = {
@@ -547,7 +582,8 @@ BLT.spells = {
             lvlReq = 20,
             tar = false,
             glyph = GetGlyphName[12975],
-            glyphCd = 60
+            glyphCd = 60,
+            role = "tank"
         },
         -- Shield Wall
         [GetSpellInfo(871)] = {
@@ -561,7 +597,8 @@ BLT.spells = {
             lvlReq = 28,
             tar = false,
             glyph = GetGlyphName[871],
-            glyphCd = 120
+            glyphCd = 120,
+            role = "tank"
         }
     }
 }

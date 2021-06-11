@@ -168,7 +168,25 @@ BLT.options = {
                         end
                     end,
                     order = 9
-                }
+                },
+                healerOnlyCD = {
+                    type = "toggle",
+                    name = L["Show only healer cooldowns"],
+                    desc = L["Display healing cooldowns only for healers"],
+                    get = get,
+                    set = set,
+                    width = "full",
+                    order = 10
+                },
+                tankOnlyCD = {
+                    type = "toggle",
+                    name = L["Show only tank cooldowns"],
+                    desc = L["Display defensive cooldowns only for tanks"],
+                    get = get,
+                    set = set,
+                    width = "full",
+                    order = 11
+                },
             }
         },
         show = {

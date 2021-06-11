@@ -2,11 +2,12 @@
 ## Title: BLT
 ## Notes: Tracks specific cooldowns of players in a raid/party
 ## Version: 1.3.2
-## OptionalDeps: Ace3, LibSharedMedia-3.0, AceGUI-3.0-SharedMediaWidgets, LibDualSpec-1.0
+## OptionalDeps: Ace3, LibSharedMedia-3.0, AceGUI-3.0-SharedMediaWidgets, LibTalentQuery-1.0, LibGroupTalents-1.0, LibDualSpec-1.0
 ## SavedVariables: BLT_DB
 
 #@no-lib-strip@
 embeds.xml
+libs\LibTalentQuery-1.0\lib.xml
 #@end-no-lib-strip@
 
 locale\enUS.lua
