@@ -138,6 +138,7 @@ local classColors = {
     ["WARLOCK"] = "9482C9",
     ["WARRIOR"] = "C79C6E"
 }
+local updateCooldownTimer = 0
 
 -- Helper functions --
 function BLT:Unit(name)
@@ -382,11 +383,17 @@ end
 -- Core functions --
 local f = CreateFrame("Frame")
 f:SetScript("OnUpdate", function(_, elapsed)
+
     if not mainFrame then return end
-    -- Update the Backend
-    BLT:UpdateBackend(elapsed)
-    -- Update the UI
-    BLT:UpdateUI()
+
+    updateCooldownTimer = updateCooldownTimer - elapsed
+    if updateCooldownTimer < -0.01 then
+        -- Update the Backend
+        BLT:UpdateBackend(elapsed)
+        -- Update the UI
+        BLT:UpdateUI()
+        updateCooldownTimer = 0.1
+    end
 end)
 
 local function HandleEvent(_, event, ...)
