@@ -106,6 +106,7 @@ L["You are not in a raid group!"] = true
 L["Online raid members using the addon: %s"] = true
 L["Miscellaneous"] = true
 L["%s is ready to be used by %s"] = true
+L["Your %s is ready!"] = true
 L["Raid Addon Check"] = true
 L["Check who in your raid is also running BLT"] = true
 L["Show When..."] = true

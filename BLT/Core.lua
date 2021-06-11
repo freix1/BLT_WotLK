@@ -1207,6 +1207,14 @@ function BLT:UpdateIconFrame(index)
                     self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id)), next(players) and tconcat(players, ", ") or "—"))
                     SendCharMessage(("%s"):format(), BLT:GetGroupState())
                 end
+            else if IsControlKeyDown() then
+                local players = self:GetReadyPlayerCooldowns(frame)
+
+                for key,player in pairs(players) do
+                    if player ~= selfPlayerName and player then
+                        SendChatMessage(L["Your %s is ready!"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id), true)), "WHISPER", nil, player)
+                    end
+                end
             end
         end)
 
