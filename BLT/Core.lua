@@ -416,10 +416,10 @@ local function HandleEvent(_, event, ...)
                 -- Check if we cast a spell
             elseif combatEvent == "SPELL_CAST_SUCCESS" then
                 local spellId, spellName = select(9,...)
-                if not contains(trackCooldownSpells, spellName) then return end
+                if not contains(trackCooldownSpells, spellName) and not contains(trackItemSpellIDs, spellId) then return end
                 if spellName == GetSpellInfo(57934) or spellName == GetSpellInfo(34477) then -- 'Tricks of the Trade' or 'Misdirection'
                     targetTable[sourceName] = destName
-                elseif contains(trackCooldownSpellIDs, spellId) then
+                elseif contains(trackCooldownSpellIDs, spellId) or contains(trackItemSpellIDs, spellId) then
                     targetSpellId, targetSpellName = spellId, spellName
                 end
                 if spellName == GetSpellInfo(23989) then -- 'Readiness'
@@ -1198,6 +1198,7 @@ function BLT:UpdateIconFrame(index)
         end
 
         -- Shift-Click on an icon will print whose cooldowns are ready to be used
+        -- Ctrl-Click on an icon will send to whose cooldowns are ready to be used
         frame:SetScript("OnMouseDown", function()
             if IsShiftKeyDown() then
                 local players = self:GetReadyPlayerCooldowns(frame)
