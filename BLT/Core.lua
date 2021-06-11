@@ -1212,7 +1212,7 @@ function BLT:UpdateIconFrame(index)
 
                 for key,player in pairs(players) do
                     if player ~= selfPlayerName and player then
-                        SendChatMessage(L["Your %s is ready!"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id), true)), "WHISPER", nil, player)
+                        SendChatMessage(L["Your %s is ready!"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true)), "WHISPER", nil, player)
                     end
                 end
             end
