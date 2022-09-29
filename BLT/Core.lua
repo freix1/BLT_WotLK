@@ -102,6 +102,7 @@ local trackItemCooldowns = {}
 local trackLvlRequirement = {}
 local trackGlyphs = {}
 local trackGlyphCooldown = {}
+local trackRole = {}
 local trackCooldownTargets = {}
 local trackCooldownAllUniqueSpellNames = {}
 local trackCooldownAllUniqueSpellEnabledStatuses = {}
@@ -641,7 +642,7 @@ end
 function BLT:OnEnable()
     for k in pairs(self.spells) do
         for k2,v in pairs(self.spells[k]) do
-            self:AddTrackCooldownSpell(v.nr, k, v.spec, k2, v.id, v.cd, v.talent, v.talReq, v.altCd, v.lvlReq, v.tar, v.glyph, v.glyphCd)
+            self:AddTrackCooldownSpell(v.nr, k, v.spec, k2, v.id, v.cd, v.talent, v.talReq, v.altCd, v.lvlReq, v.tar, v.glyph, v.glyphCd, v.role)
         end
     end
     for k in pairs(self.items) do
@@ -699,7 +700,7 @@ function BLT:ShowConfig()
     InterfaceOptionsFrame_OpenToCategory(self.optionsFrames.BLT)
 end
 
-function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, talent, talReq, altCd, lvlReq, tar, glyph, glyphCd)
+function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, talent, talReq, altCd, lvlReq, tar, glyph, glyphCd, role)
     tinsert(sortNr, nr)
     tinsert(trackCooldownClasses, class)
     tinsert(trackCooldownSpecs, spec)
@@ -713,6 +714,7 @@ function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, t
     tinsert(trackCooldownTargets, tar)
     tinsert(trackGlyphs, glyph)
     tinsert(trackGlyphCooldown, glyphCd)
+    tinsert(trackRole, role)
 
     if not contains(trackCooldownAllUniqueSpellNames, spellName) then
         tinsert(trackCooldownAllUniqueSpellNames, spellName)
@@ -1401,10 +1403,26 @@ function BLT:IsPlayerValidForSpellCooldown(player, index)
     if self.playerSpecs[player] and self.playerLevel[player] >= trackLvlRequirement[index] then
         if trackCooldownSpecs[index] == self.playerSpecs[player] or trackCooldownSpecs[index] == "Any" then
             if trackTalents[index] == "nil" or (trackTalents[index] ~= "nil" and talentRequired[index] == false) then
-                return true
+                return BLT:IsPlayerRoleValidForSpellCooldown(player, index)
             elseif self.playerTalentsSpecced[player] and contains(self.playerTalentsSpecced[player], trackTalents[index], true) then
-                return true
+                return BLT:IsPlayerRoleValidForSpellCooldown(player, index)
             end
+        end
+    end
+    return false
+end
+
+function BLT:IsPlayerRoleValidForSpellCooldown(player, index)
+    local thisPlayerRole = self.playerRole[player]
+
+    if trackRole[index] == "nil" or not thisPlayerRole or thisPlayerRole == "nil" then return true end
+    if thisPlayerRole == trackRole[index] then return true end
+    if thisPlayerRole == "melee" or thisPlayerRole == "caster" then
+        if not db.healerOnlyCD and trackRole[index] == "healer" then
+            return true
+        end
+        if not db.tankOnlyCD and trackRole[index] == "tank" then
+            return true
         end
     end
     return false
