@@ -1,6 +1,7 @@
 local BLT = LibStub("AceAddon-3.0"):NewAddon("BLT", "AceConsole-3.0", "AceTimer-3.0", "AceEvent-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("BLT")
 local TalentQuery = LibStub:GetLibrary("LibTalentQuery-1.0")
+local LibGroupTalents = LibStub("LibGroupTalents-1.0")
 
 local select, pairs, ipairs, next = _G.select, _G.pairs, _G.ipairs, _G.next
 local tinsert, tremove, tconcat, twipe = table.insert, table.remove, table.concat, table.wipe
@@ -32,6 +33,7 @@ BLT.playerLevel = {}
 BLT.playerEquipment = {}
 BLT.playerTalentPoints = {}
 BLT.playerTalentsSpecced = {}
+BLT.playerRole = {}
 BLT.playerGlyphs = {}
 BLT.specificTalents = {
     ["DEATHKNIGHT"] = {
@@ -241,6 +243,8 @@ function BLT:TalentQuery_Ready(e, name, r, unitId)
                     self.playerLevel[name] = unitTargetLevel
                     self.playerTalentPoints[name] = x .. "/" .. y .. "/" .. z
                     self.playerTalentsSpecced[name] = {}
+                    self.playerRole[name] = LibGroupTalents:GetUnitRole(name)
+
                     if next(playerTalents) ~= nil then
                         self.playerTalentsSpecced[name] = playerTalents
                     end
@@ -326,6 +330,7 @@ function BLT:ClearLists()
     clearList(self.playerTalentPoints)
     clearList(self.playerTalentsSpecced)
     clearList(self.playerEquipment)
+    clearList(self.playerRole)
     clearList(inspectedUnits)
     self:Print(L["All data cleared!"])
 end
@@ -338,5 +343,6 @@ function BLT:RemoveUnitFromTables(unit)
     self.playerTalentPoints[unitName] = nil
     self.playerTalentsSpecced[unitName] = nil
     self.playerEquipment[unitName] = nil
+    self.playerRole[unitName] = nil
     removeFirst(inspectedUnits,unitName)
 end

@@ -102,6 +102,7 @@ local trackItemCooldowns = {}
 local trackLvlRequirement = {}
 local trackGlyphs = {}
 local trackGlyphCooldown = {}
+local trackRole = {}
 local trackCooldownTargets = {}
 local trackCooldownAllUniqueSpellNames = {}
 local trackCooldownAllUniqueSpellEnabledStatuses = {}
@@ -138,6 +139,7 @@ local classColors = {
     ["WARLOCK"] = "9482C9",
     ["WARRIOR"] = "C79C6E"
 }
+local updateCooldownTimer = 0
 
 -- Helper functions --
 function BLT:Unit(name)
@@ -382,11 +384,17 @@ end
 -- Core functions --
 local f = CreateFrame("Frame")
 f:SetScript("OnUpdate", function(_, elapsed)
+
     if not mainFrame then return end
-    -- Update the Backend
-    BLT:UpdateBackend(elapsed)
-    -- Update the UI
-    BLT:UpdateUI()
+
+    updateCooldownTimer = updateCooldownTimer - elapsed
+    if updateCooldownTimer < -0.01 then
+        -- Update the Backend
+        BLT:UpdateBackend(elapsed)
+        -- Update the UI
+        BLT:UpdateUI()
+        updateCooldownTimer = 0.1
+    end
 end)
 
 local function HandleEvent(_, event, ...)
@@ -416,10 +424,10 @@ local function HandleEvent(_, event, ...)
                 -- Check if we cast a spell
             elseif combatEvent == "SPELL_CAST_SUCCESS" then
                 local spellId, spellName = select(9,...)
-                if not contains(trackCooldownSpells, spellName) then return end
+                if not contains(trackCooldownSpells, spellName) and not contains(trackItemSpellIDs, spellId) and not contains(trackItemSpellIDsHC, spellId) then return end
                 if spellName == GetSpellInfo(57934) or spellName == GetSpellInfo(34477) then -- 'Tricks of the Trade' or 'Misdirection'
                     targetTable[sourceName] = destName
-                elseif contains(trackCooldownSpellIDs, spellId) then
+                elseif contains(trackCooldownSpellIDs, spellId) or contains(trackItemSpellIDs, spellId) or contains(trackItemSpellIDsHC, spellId) then
                     targetSpellId, targetSpellName = spellId, spellName
                 end
                 if spellName == GetSpellInfo(23989) then -- 'Readiness'
@@ -634,7 +642,7 @@ end
 function BLT:OnEnable()
     for k in pairs(self.spells) do
         for k2,v in pairs(self.spells[k]) do
-            self:AddTrackCooldownSpell(v.nr, k, v.spec, k2, v.id, v.cd, v.talent, v.talReq, v.altCd, v.lvlReq, v.tar, v.glyph, v.glyphCd)
+            self:AddTrackCooldownSpell(v.nr, k, v.spec, k2, v.id, v.cd, v.talent, v.talReq, v.altCd, v.lvlReq, v.tar, v.glyph, v.glyphCd, v.role)
         end
     end
     for k in pairs(self.items) do
@@ -692,7 +700,7 @@ function BLT:ShowConfig()
     InterfaceOptionsFrame_OpenToCategory(self.optionsFrames.BLT)
 end
 
-function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, talent, talReq, altCd, lvlReq, tar, glyph, glyphCd)
+function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, talent, talReq, altCd, lvlReq, tar, glyph, glyphCd, role)
     tinsert(sortNr, nr)
     tinsert(trackCooldownClasses, class)
     tinsert(trackCooldownSpecs, spec)
@@ -706,6 +714,7 @@ function BLT:AddTrackCooldownSpell(nr, class, spec, spellName, spellId, maxCd, t
     tinsert(trackCooldownTargets, tar)
     tinsert(trackGlyphs, glyph)
     tinsert(trackGlyphCooldown, glyphCd)
+    tinsert(trackRole, role)
 
     if not contains(trackCooldownAllUniqueSpellNames, spellName) then
         tinsert(trackCooldownAllUniqueSpellNames, spellName)
@@ -1159,7 +1168,7 @@ function BLT:UpdateIconFrame(index)
     -- Check if the current frame is used
     local frame = icon_Frames[index]
     local name = frame.name
-
+    local selfPlayerName = UnitName("player")
     -- Update the cooldown frames of the spell icon
     cooldownBottomMostElementY = 0
     cooldownCurrentCounter = 0
@@ -1198,14 +1207,23 @@ function BLT:UpdateIconFrame(index)
         end
 
         -- Shift-Click on an icon will print whose cooldowns are ready to be used
+        -- Ctrl-Click on an icon will send to whose cooldowns are ready to be used
         frame:SetScript("OnMouseDown", function()
             if IsShiftKeyDown() then
                 local players = self:GetReadyPlayerCooldowns(frame)
                 if GetNumPartyMembers() ~= 0 then
                     SendChatMessage(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true), next(players) and tconcat(players, ", ") or "—"), BLT:GetGroupState())
                 else
-                    self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id or self:Item(frame.id)), next(players) and tconcat(players, ", ") or "—"))
-                    SendCharMessage(("%s"):format(), BLT:GetGroupState())
+                    self:Print(L["%s is ready to be used by %s"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id) or self:Item(frame.id), next(players) and tconcat(players, ", ") or "—"))
+                    -- SendCharMessage(("%s"):format(), BLT:GetGroupState())
+                end
+            elseif IsControlKeyDown() then
+                local players = self:GetReadyPlayerCooldowns(frame)
+
+                for key,player in pairs(players) do
+                    if player ~= selfPlayerName and player then
+                        SendChatMessage(L["Your %s is ready!"]:format(contains(trackCooldownSpellIDs, frame.id) and self:Spell(frame.id, true) or self:Item(frame.id, true)), "WHISPER", nil, player)
+                    end
                 end
             end
         end)
@@ -1385,10 +1403,26 @@ function BLT:IsPlayerValidForSpellCooldown(player, index)
     if self.playerSpecs[player] and self.playerLevel[player] >= trackLvlRequirement[index] then
         if trackCooldownSpecs[index] == self.playerSpecs[player] or trackCooldownSpecs[index] == "Any" then
             if trackTalents[index] == "nil" or (trackTalents[index] ~= "nil" and talentRequired[index] == false) then
-                return true
+                return BLT:IsPlayerRoleValidForSpellCooldown(player, index)
             elseif self.playerTalentsSpecced[player] and contains(self.playerTalentsSpecced[player], trackTalents[index], true) then
-                return true
+                return BLT:IsPlayerRoleValidForSpellCooldown(player, index)
             end
+        end
+    end
+    return false
+end
+
+function BLT:IsPlayerRoleValidForSpellCooldown(player, index)
+    local thisPlayerRole = self.playerRole[player]
+
+    if trackRole[index] == "nil" or not thisPlayerRole or thisPlayerRole == "nil" then return true end
+    if thisPlayerRole == trackRole[index] then return true end
+    if thisPlayerRole == "melee" or thisPlayerRole == "caster" then
+        if not db.healerOnlyCD and trackRole[index] == "healer" then
+            return true
+        end
+        if not db.tankOnlyCD and trackRole[index] == "tank" then
+            return true
         end
     end
     return false
