@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Title: BLT
 ## Notes: Tracks specific cooldowns of players in a raid/party
-## Version: 1.3.2
+## Version: 1.4
 ## OptionalDeps: Ace3, LibSharedMedia-3.0, AceGUI-3.0-SharedMediaWidgets, LibTalentQuery-1.0, LibGroupTalents-1.0, LibDualSpec-1.0
 ## SavedVariables: BLT_DB
 
