@@ -352,7 +352,7 @@ BLT.spells = {
         },
         -- Holy Wrath
         [GetSpellInfo(48817)] = {
-            nr = 17,
+            nr = 17.5,
             id = 48817,
             cd = 30,
             spec = "Any",
