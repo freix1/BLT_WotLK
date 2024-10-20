@@ -350,6 +350,21 @@ BLT.spells = {
             glyphCd = 0,
             role = "nil"
         },
+        -- Holy Wrath
+        [GetSpellInfo(48817)] = {
+            nr = 17,
+            id = 48817,
+            cd = 30,
+            spec = "Any",
+            talent = 'nil',
+            talReq = true,
+            altCd = "nil",
+            lvlReq = 60,
+            tar = false,
+            glyph = "48817",
+            glyphCd = 15,
+            role = "nil"
+        },
         -- Lay on Hands
         [GetSpellInfo(48788)] = {
             nr = 19,
